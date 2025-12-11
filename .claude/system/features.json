@@ -129,14 +129,20 @@
       "id": "SDK014",
       "name": "Amazon Bedrock support",
       "description": "Support Claude models via AWS Bedrock. Implement AWS SigV4 signing, bedrock-runtime endpoint, handle different request/response envelope format.",
-      "status": "new",
+      "status": "completed",
       "priority": 3,
       "dependencies": ["SDK003", "SDK005"],
       "notes": [
-        "Bedrock uses AWS SigV4 authentication instead of API keys",
-        "Endpoint: bedrock-runtime.{region}.amazonaws.com",
-        "Request/response wrapped in Bedrock envelope",
-        "Use aws-config and aws-sigv4 crates"
+        "ClaudeBackend enum with Anthropic and Bedrock variants",
+        "bedrock() constructor with AWS credential loading (AWS SDK 1.x)",
+        "Uses aws-sdk-bedrockruntime high-level client (simpler than manual signing)",
+        "Automatic model ID conversion (Anthropic → Bedrock format)",
+        "Non-streaming API fully working with invoke_model()",
+        "Streaming API fully working with invoke_model_with_response_stream()",
+        "Uses async-stream crate to convert EventReceiver to Stream",
+        "Tested with AWS SDK 1.x (stable), works with all Bedrock model IDs",
+        "Unified client interface - same API for both backends",
+        "Both streaming and non-streaming work identically across backends"
       ]
     },
     {

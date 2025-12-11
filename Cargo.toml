@@ -29,6 +29,10 @@ tracing = "0.1"
 # SSE parsing (for streaming)
 eventsource-stream = "0.2"
 bytes = "1"
+async-stream = "0.3"
+
+# HTTP types (for Bedrock signing)
+http = "1"
 
 [dev-dependencies]
 anyhow = "1"
@@ -38,23 +42,15 @@ tracing-subscriber = "0.3"
 [features]
 default = ["anthropic"]
 anthropic = []
-bedrock = ["aws-config", "aws-sigv4", "aws-types", "aws-credential-types"]
+bedrock = ["aws-config", "aws-sdk-bedrockruntime"]
 full = ["anthropic", "bedrock"]
 
-# Bedrock dependencies (optional)
+# Bedrock dependencies (optional) - AWS SDK 1.x (stable)
 [dependencies.aws-config]
 version = "1"
 optional = true
 
-[dependencies.aws-sigv4]
-version = "1"
-optional = true
-
-[dependencies.aws-types]
-version = "1"
-optional = true
-
-[dependencies.aws-credential-types]
+[dependencies.aws-sdk-bedrockruntime]
 version = "1"
 optional = true
 

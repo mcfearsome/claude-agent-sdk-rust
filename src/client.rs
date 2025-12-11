@@ -9,17 +9,33 @@ use reqwest::{Client, StatusCode};
 use std::pin::Pin;
 use tracing::{debug, instrument};
 
+#[cfg(feature = "bedrock")]
+use aws_sdk_bedrockruntime::Client as BedrockClient;
+
 /// API endpoint for Anthropic
 const ANTHROPIC_API_URL: &str = "https://api.anthropic.com/v1/messages";
 
 /// Current API version
 const API_VERSION: &str = "2023-06-01";
 
+/// Backend for Claude API
+pub enum ClaudeBackend {
+    /// Anthropic API with API key
+    Anthropic { api_key: String },
+
+    /// AWS Bedrock with Bedrock runtime client
+    #[cfg(feature = "bedrock")]
+    Bedrock {
+        region: String,
+        bedrock_client: BedrockClient,
+    },
+}
+
 /// Claude API client
 ///
 /// This client can connect to either the Anthropic API directly or AWS Bedrock.
 ///
-/// # Example
+/// # Example - Anthropic API
 ///
 /// ```rust,no_run
 /// use claude_sdk::ClaudeClient;
@@ -32,10 +48,23 @@ const API_VERSION: &str = "2023-06-01";
 ///     Ok(())
 /// }
 /// ```
+///
+/// # Example - AWS Bedrock
+///
+/// ```rust,no_run
+/// # #[cfg(feature = "bedrock")]
+/// use claude_sdk::ClaudeClient;
+///
+/// # #[cfg(feature = "bedrock")]
+/// #[tokio::main]
+/// async fn main() -> Result<(), Box<dyn std::error::Error>> {
+///     let client = ClaudeClient::bedrock("us-east-1").await?;
+///     Ok(())
+/// }
+/// ```
 pub struct ClaudeClient {
     http: Client,
-    api_key: String,
-    api_url: String,
+    backend: ClaudeBackend,
     api_version: String,
 }
 
@@ -52,10 +81,53 @@ impl ClaudeClient {
     pub fn anthropic(api_key: impl Into<String>) -> Self {
         Self {
             http: Client::new(),
-            api_key: api_key.into(),
-            api_url: ANTHROPIC_API_URL.to_string(),
+            backend: ClaudeBackend::Anthropic {
+                api_key: api_key.into(),
+            },
             api_version: API_VERSION.to_string(),
         }
+    }
+
+    /// Create a new client for AWS Bedrock
+    ///
+    /// This loads AWS credentials from the environment (AWS_PROFILE, AWS_ACCESS_KEY_ID, etc.)
+    /// using the standard AWS credential chain.
+    ///
+    /// # Example
+    ///
+    /// ```rust,no_run
+    /// # #[cfg(feature = "bedrock")]
+    /// use claude_sdk::ClaudeClient;
+    ///
+    /// # #[cfg(feature = "bedrock")]
+    /// #[tokio::main]
+    /// async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    ///     // Uses AWS_PROFILE or default credential chain
+    ///     let client = ClaudeClient::bedrock("us-east-1").await?;
+    ///     Ok(())
+    /// }
+    /// ```
+    #[cfg(feature = "bedrock")]
+    pub async fn bedrock(region: impl Into<String>) -> Result<Self> {
+        let region = region.into();
+
+        // Load AWS config with specified region
+        let config = aws_config::load_defaults(aws_config::BehaviorVersion::latest()).await;
+        let bedrock_config = aws_sdk_bedrockruntime::config::Builder::from(&config)
+            .region(aws_sdk_bedrockruntime::config::Region::new(region.clone()))
+            .build();
+
+        // Create Bedrock runtime client
+        let bedrock_client = BedrockClient::from_conf(bedrock_config);
+
+        Ok(Self {
+            http: Client::new(),
+            backend: ClaudeBackend::Bedrock {
+                region,
+                bedrock_client,
+            },
+            api_version: API_VERSION.to_string(),
+        })
     }
 
     /// Send a message and get a complete response
@@ -83,7 +155,22 @@ impl ClaudeClient {
     /// ```
     #[instrument(skip(self, request), fields(model = %request.model))]
     pub async fn send_message(&self, request: MessagesRequest) -> Result<MessagesResponse> {
-        debug!("Sending message to Claude API");
+        match &self.backend {
+            ClaudeBackend::Anthropic { .. } => self.send_anthropic(request).await,
+            #[cfg(feature = "bedrock")]
+            ClaudeBackend::Bedrock { .. } => self.send_bedrock(request).await,
+        }
+    }
+
+    /// Send message to Anthropic API
+    async fn send_anthropic(&self, request: MessagesRequest) -> Result<MessagesResponse> {
+        let api_key = match &self.backend {
+            ClaudeBackend::Anthropic { api_key } => api_key,
+            #[allow(unreachable_patterns)]
+            _ => unreachable!("send_anthropic called with non-Anthropic backend"),
+        };
+
+        debug!("Sending message to Anthropic API");
 
         // Ensure stream is not set or is false
         let mut request = request;
@@ -91,8 +178,8 @@ impl ClaudeClient {
 
         let response = self
             .http
-            .post(&self.api_url)
-            .header("x-api-key", &self.api_key)
+            .post(ANTHROPIC_API_URL)
+            .header("x-api-key", api_key)
             .header("anthropic-version", &self.api_version)
             .header("content-type", "application/json")
             .json(&request)
@@ -157,6 +244,65 @@ impl ClaudeClient {
         }
     }
 
+    /// Send message to AWS Bedrock
+    #[cfg(feature = "bedrock")]
+    async fn send_bedrock(&self, request: MessagesRequest) -> Result<MessagesResponse> {
+        let (bedrock_client, model_id) = match &self.backend {
+            ClaudeBackend::Bedrock { bedrock_client, .. } => {
+                let model_id = self.get_bedrock_model_id(&request.model)?;
+                (bedrock_client, model_id)
+            }
+            _ => unreachable!("send_bedrock called with non-Bedrock backend"),
+        };
+
+        debug!("Sending message to AWS Bedrock");
+
+        // Serialize request to JSON
+        let body = serde_json::to_string(&request)?;
+
+        // Use Bedrock runtime client
+        let response = bedrock_client
+            .invoke_model()
+            .model_id(&model_id)
+            .content_type("application/json")
+            .body(aws_sdk_bedrockruntime::primitives::Blob::new(
+                body.as_bytes(),
+            ))
+            .send()
+            .await
+            .map_err(|e| Error::Network(format!("Bedrock API call failed: {}", e)))?;
+
+        // Parse response body
+        let response_bytes = response.body().as_ref();
+        let messages_response: MessagesResponse = serde_json::from_slice(response_bytes)?;
+
+        Ok(messages_response)
+    }
+
+    /// Get Bedrock model ID for a given model string
+    #[cfg(feature = "bedrock")]
+    fn get_bedrock_model_id(&self, model: &str) -> Result<String> {
+        // If already a Bedrock ID, use as-is
+        if model.starts_with("anthropic.")
+            || model.starts_with("global.")
+            || model.starts_with("us.")
+            || model.starts_with("eu.")
+            || model.starts_with("ap.")
+        {
+            return Ok(model.to_string());
+        }
+
+        // Try to find the model and get its Bedrock ID
+        if let Some(model_info) = crate::models::get_model_by_anthropic_id(model) {
+            if let Some(bedrock_id) = model_info.bedrock_id {
+                return Ok(bedrock_id.to_string());
+            }
+        }
+
+        // Fallback: assume it's a valid ID
+        Ok(model.to_string())
+    }
+
     /// Send a message and stream the response
     ///
     /// Returns a stream of events as Claude generates its response.
@@ -197,7 +343,25 @@ impl ClaudeClient {
         &self,
         request: MessagesRequest,
     ) -> Result<Pin<Box<dyn Stream<Item = Result<StreamEvent>> + Send>>> {
-        debug!("Sending streaming message to Claude API");
+        match &self.backend {
+            ClaudeBackend::Anthropic { .. } => self.send_streaming_anthropic(request).await,
+            #[cfg(feature = "bedrock")]
+            ClaudeBackend::Bedrock { .. } => self.send_streaming_bedrock(request).await,
+        }
+    }
+
+    /// Send streaming message to Anthropic API
+    async fn send_streaming_anthropic(
+        &self,
+        request: MessagesRequest,
+    ) -> Result<Pin<Box<dyn Stream<Item = Result<StreamEvent>> + Send>>> {
+        let api_key = match &self.backend {
+            ClaudeBackend::Anthropic { api_key } => api_key,
+            #[allow(unreachable_patterns)]
+            _ => unreachable!("send_streaming_anthropic called with non-Anthropic backend"),
+        };
+
+        debug!("Sending streaming message to Anthropic API");
 
         // Enable streaming
         let mut request = request;
@@ -205,8 +369,8 @@ impl ClaudeClient {
 
         let response = self
             .http
-            .post(&self.api_url)
-            .header("x-api-key", &self.api_key)
+            .post(ANTHROPIC_API_URL)
+            .header("x-api-key", api_key)
             .header("anthropic-version", &self.api_version)
             .header("content-type", "application/json")
             .json(&request)
@@ -263,6 +427,78 @@ impl ClaudeClient {
         let filtered_stream = stream.try_filter_map(|opt| async move { Ok(opt) });
 
         Ok(Box::pin(filtered_stream))
+    }
+
+    /// Send streaming message to AWS Bedrock
+    #[cfg(feature = "bedrock")]
+    async fn send_streaming_bedrock(
+        &self,
+        request: MessagesRequest,
+    ) -> Result<Pin<Box<dyn Stream<Item = Result<StreamEvent>> + Send>>> {
+        let (bedrock_client, model_id) = match &self.backend {
+            ClaudeBackend::Bedrock { bedrock_client, .. } => {
+                let model_id = self.get_bedrock_model_id(&request.model)?;
+                (bedrock_client, model_id)
+            }
+            _ => unreachable!("send_streaming_bedrock called with non-Bedrock backend"),
+        };
+
+        debug!("Sending streaming message to AWS Bedrock");
+
+        // Enable streaming
+        let mut request = request;
+        request.stream = Some(true);
+
+        // Serialize request to JSON
+        let body = serde_json::to_string(&request)?;
+
+        // Use Bedrock runtime client with streaming
+        let response = bedrock_client
+            .invoke_model_with_response_stream()
+            .model_id(&model_id)
+            .content_type("application/json")
+            .body(aws_sdk_bedrockruntime::primitives::Blob::new(
+                body.as_bytes(),
+            ))
+            .send()
+            .await
+            .map_err(|e| Error::Network(format!("Bedrock streaming API call failed: {}", e)))?;
+
+        // Convert Bedrock EventReceiver to a stream
+        let mut event_stream = response.body;
+
+        // Create a stream by polling the EventReceiver
+        let stream = async_stream::stream! {
+            loop {
+                match event_stream.recv().await {
+                    Ok(Some(event)) => {
+                        // Parse the event based on Bedrock's format
+                        if let aws_sdk_bedrockruntime::types::ResponseStream::Chunk(payload) = event {
+                            let bytes = payload.bytes().ok_or_else(|| {
+                                Error::StreamParse("Bedrock chunk missing bytes".into())
+                            })?;
+
+                            let json_str = std::str::from_utf8(bytes.as_ref())
+                                .map_err(|e| Error::StreamParse(format!("Invalid UTF-8: {}", e)))?;
+
+                            // Parse as StreamEvent
+                            let stream_event: StreamEvent = serde_json::from_str(json_str)
+                                .map_err(|e| Error::StreamParse(format!("Failed to parse Bedrock event: {}", e)))?;
+
+                            yield Ok(stream_event);
+                        }
+                        // Skip other event types
+                    }
+                    Ok(None) => break, // Stream ended
+                    Err(e) => {
+                        yield Err(Error::StreamParse(format!("Bedrock stream error: {}", e)));
+                        break;
+                    }
+                }
+            }
+        };
+
+        Ok(Box::pin(stream))
     }
 
     /// Helper to handle error responses
@@ -375,10 +611,36 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_client_creation() {
+    fn test_client_creation_anthropic() {
         let client = ClaudeClient::anthropic("test-key");
-        assert_eq!(client.api_key, "test-key");
-        assert_eq!(client.api_url, ANTHROPIC_API_URL);
+
+        match &client.backend {
+            ClaudeBackend::Anthropic { api_key } => {
+                assert_eq!(api_key, "test-key");
+            }
+            #[allow(unreachable_patterns)]
+            _ => panic!("Expected Anthropic backend"),
+        }
+
         assert_eq!(client.api_version, API_VERSION);
+    }
+
+    #[tokio::test]
+    #[cfg(feature = "bedrock")]
+    #[ignore] // Requires AWS credentials
+    async fn test_client_creation_bedrock() {
+        // This test only runs with: cargo test -- --ignored
+        // and requires AWS credentials to be configured
+        let result = ClaudeClient::bedrock("us-east-1").await;
+
+        if let Ok(client) = result {
+            match &client.backend {
+                ClaudeBackend::Bedrock { region, .. } => {
+                    assert_eq!(region, "us-east-1");
+                }
+                _ => panic!("Expected Bedrock backend"),
+            }
+        }
+        // If credentials aren't available, test is skipped
     }
 }
