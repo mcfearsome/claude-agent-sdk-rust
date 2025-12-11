@@ -99,6 +99,7 @@ impl ConversationBuilder {
     ///         "required": ["location"]
     ///     }),
     ///     disable_user_input: Some(true),
+    ///     input_examples: None,
     ///     cache_control: None,
     /// };
     ///
@@ -292,6 +293,7 @@ mod tests {
             description: "A test tool".into(),
             input_schema: json!({"type": "object"}),
             disable_user_input: None,
+            input_examples: None,
             cache_control: None,
         };
 

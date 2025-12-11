@@ -40,4 +40,7 @@ pub use conversation::ConversationBuilder;
 pub use error::{Error, Result};
 pub use models::{BedrockRegion, Model};
 pub use streaming::{ContentDelta, MessageDelta, StreamEvent};
-pub use types::{ContentBlock, Message, MessagesRequest, MessagesResponse, Role, Tool, Usage};
+pub use types::{
+    ContentBlock, EffortLevel, Message, MessagesRequest, MessagesResponse, OutputConfig, Role,
+    StopReason, Tool, ToolChoice, Usage,
+};

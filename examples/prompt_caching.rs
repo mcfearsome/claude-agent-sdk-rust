@@ -48,6 +48,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             "required": ["query"]
         }),
         disable_user_input: Some(true),
+        input_examples: None,
         cache_control: None, // Will be set by with_cached_tool()
     };
 
@@ -65,6 +66,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             "required": ["path"]
         }),
         disable_user_input: Some(true),
+        input_examples: None,
         cache_control: None,
     };
 

@@ -131,9 +131,52 @@ pub struct Tool {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub disable_user_input: Option<bool>,
 
+    /// Example inputs for the tool (beta feature)
+    ///
+    /// Requires beta header: `anthropic-beta: advanced-tool-use-2025-11-20`
+    /// Each example must be valid according to the input_schema.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub input_examples: Option<Vec<serde_json::Value>>,
+
     /// Cache control for this tool definition
     #[serde(skip_serializing_if = "Option::is_none")]
     pub cache_control: Option<CacheControl>,
+}
+
+/// Tool choice configuration
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(tag = "type", rename_all = "lowercase")]
+pub enum ToolChoice {
+    /// Let Claude decide whether to use tools (default)
+    Auto,
+    /// Claude must use one of the provided tools
+    Any,
+    /// Force Claude to use a specific tool
+    Tool { name: String },
+    /// Prevent Claude from using any tools
+    None,
+}
+
+impl ToolChoice {
+    /// Create Auto variant
+    pub fn auto() -> Self {
+        Self::Auto
+    }
+
+    /// Create Any variant
+    pub fn any() -> Self {
+        Self::Any
+    }
+
+    /// Create Tool variant with specific tool name
+    pub fn tool(name: impl Into<String>) -> Self {
+        Self::Tool { name: name.into() }
+    }
+
+    /// Create None variant
+    pub fn none() -> Self {
+        Self::None
+    }
 }
 
 /// Token usage information
@@ -171,6 +214,23 @@ pub struct MessagesRequest {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tools: Option<Vec<Tool>>,
 
+    /// Tool choice configuration
+    ///
+    /// Controls how Claude uses tools:
+    /// - `Auto` (default): Claude decides whether to use tools
+    /// - `Any`: Claude must use one of the provided tools
+    /// - `Tool { name }`: Force Claude to use a specific tool
+    /// - `None`: Prevent Claude from using any tools
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tool_choice: Option<ToolChoice>,
+
+    /// Disable parallel tool use
+    ///
+    /// When true with `tool_choice: auto`, Claude will use at most one tool.
+    /// When true with `tool_choice: any/tool`, Claude will use exactly one tool.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub disable_parallel_tool_use: Option<bool>,
+
     /// Sampling temperature (0.0 to 1.0)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub temperature: Option<f32>,
@@ -190,6 +250,40 @@ pub struct MessagesRequest {
     /// Whether to stream the response
     #[serde(skip_serializing_if = "Option::is_none")]
     pub stream: Option<bool>,
+
+    /// Output configuration (beta)
+    ///
+    /// Controls output behavior like effort level.
+    /// Requires beta header for effort: `anthropic-beta: effort-2025-11-24`
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub output_config: Option<OutputConfig>,
+}
+
+/// Output configuration for controlling response behavior
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct OutputConfig {
+    /// Effort level: controls token spending vs. response quality
+    ///
+    /// - `high` (default): Maximum capability, uses as many tokens as needed
+    /// - `medium`: Balanced approach with moderate token savings
+    /// - `low`: Most efficient, significant token savings
+    ///
+    /// Requires beta header: `anthropic-beta: effort-2025-11-24`
+    /// Only supported by Claude Opus 4.5
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub effort: Option<EffortLevel>,
+}
+
+/// Effort level for response generation
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum EffortLevel {
+    /// Maximum capability (default if omitted)
+    High,
+    /// Balanced token savings
+    Medium,
+    /// Maximum token efficiency
+    Low,
 }
 
 impl MessagesRequest {
@@ -213,11 +307,14 @@ impl MessagesRequest {
             messages,
             system: None,
             tools: None,
+            tool_choice: None,
+            disable_parallel_tool_use: None,
             temperature: None,
             top_p: None,
             top_k: None,
             stop_sequences: None,
             stream: None,
+            output_config: None,
         }
     }
 
@@ -233,9 +330,31 @@ impl MessagesRequest {
         self
     }
 
+    /// Set tool choice configuration
+    pub fn with_tool_choice(mut self, choice: ToolChoice) -> Self {
+        self.tool_choice = Some(choice);
+        self
+    }
+
+    /// Disable parallel tool use
+    pub fn with_disable_parallel_tool_use(mut self, disable: bool) -> Self {
+        self.disable_parallel_tool_use = Some(disable);
+        self
+    }
+
     /// Set the temperature
     pub fn with_temperature(mut self, temperature: f32) -> Self {
         self.temperature = Some(temperature);
+        self
+    }
+
+    /// Set effort level (beta - requires effort-2025-11-24 header)
+    ///
+    /// Only supported by Claude Opus 4.5
+    pub fn with_effort(mut self, effort: EffortLevel) -> Self {
+        self.output_config = Some(OutputConfig {
+            effort: Some(effort),
+        });
         self
     }
 }
@@ -252,6 +371,11 @@ pub enum StopReason {
     StopSequence,
     /// Model wants to use a tool
     ToolUse,
+    /// Long-running server tool paused the turn
+    ///
+    /// Continue by sending the response content back in the next request.
+    /// Used with server tools like web search.
+    PauseTurn,
 }
 
 /// Response from creating a message
@@ -327,6 +451,7 @@ mod tests {
             description: "test tool".into(),
             input_schema: serde_json::json!({"type": "object"}),
             disable_user_input: Some(true),
+            input_examples: None,
             cache_control: Some(CacheControl::ephemeral()),
         };
 

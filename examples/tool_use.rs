@@ -51,6 +51,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             "required": ["location"]
         }),
         disable_user_input: Some(true), // Programmatic tool calling
+        input_examples: None,
         cache_control: None,
     };
 
@@ -68,6 +69,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             "required": ["expression"]
         }),
         disable_user_input: Some(true),
+        input_examples: None,
         cache_control: None,
     };
 

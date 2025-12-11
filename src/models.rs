@@ -65,6 +65,12 @@ pub struct Model {
     /// Supports extended thinking
     pub supports_extended_thinking: bool,
 
+    /// Supports effort parameter (beta)
+    ///
+    /// Requires beta header: `anthropic-beta: effort-2025-11-24`
+    /// Currently only Claude Opus 4.5
+    pub supports_effort: bool,
+
     /// Cost per million input tokens (USD)
     pub cost_per_mtok_input: f64,
 
@@ -238,6 +244,7 @@ pub const CLAUDE_SONNET_4_5: Model = Model {
     supports_tools: true,
     supports_caching: true,
     supports_extended_thinking: true,
+    supports_effort: false,
     cost_per_mtok_input: 3.0,
     cost_per_mtok_output: 15.0,
     description: "Smart model for complex agents and coding",
@@ -261,6 +268,7 @@ pub const CLAUDE_HAIKU_4_5: Model = Model {
     supports_tools: true,
     supports_caching: true,
     supports_extended_thinking: true,
+    supports_effort: false,
     cost_per_mtok_input: 1.0,
     cost_per_mtok_output: 5.0,
     description: "Fastest model with near-frontier intelligence",
@@ -269,6 +277,7 @@ pub const CLAUDE_HAIKU_4_5: Model = Model {
 /// Claude Opus 4.5 (2025-11-01)
 ///
 /// Premium model combining maximum intelligence with practical performance.
+/// Supports effort parameter (beta: effort-2025-11-24).
 pub const CLAUDE_OPUS_4_5: Model = Model {
     name: "Claude Opus 4.5",
     family: "opus",
@@ -284,6 +293,7 @@ pub const CLAUDE_OPUS_4_5: Model = Model {
     supports_tools: true,
     supports_caching: true,
     supports_extended_thinking: true,
+    supports_effort: true, // Only Opus 4.5 supports effort
     cost_per_mtok_input: 5.0,
     cost_per_mtok_output: 25.0,
     description: "Maximum intelligence with practical performance",
@@ -309,6 +319,7 @@ pub const CLAUDE_OPUS_4_1: Model = Model {
     supports_tools: true,
     supports_caching: true,
     supports_extended_thinking: true,
+    supports_effort: false,
     cost_per_mtok_input: 15.0,
     cost_per_mtok_output: 75.0,
     description: "Previous generation powerful model",
@@ -332,6 +343,7 @@ pub const CLAUDE_SONNET_4: Model = Model {
     supports_tools: true,
     supports_caching: true,
     supports_extended_thinking: true,
+    supports_effort: false,
     cost_per_mtok_input: 3.0,
     cost_per_mtok_output: 15.0,
     description: "Previous generation balanced model",
@@ -355,6 +367,7 @@ pub const CLAUDE_SONNET_3_7: Model = Model {
     supports_tools: true,
     supports_caching: true,
     supports_extended_thinking: true,
+    supports_effort: false,
     cost_per_mtok_input: 3.0,
     cost_per_mtok_output: 15.0,
     description: "Claude 3.7 balanced model",
@@ -376,6 +389,7 @@ pub const CLAUDE_OPUS_4: Model = Model {
     supports_tools: true,
     supports_caching: true,
     supports_extended_thinking: true,
+    supports_effort: false,
     cost_per_mtok_input: 15.0,
     cost_per_mtok_output: 75.0,
     description: "Claude 4 powerful model",
@@ -397,6 +411,7 @@ pub const CLAUDE_HAIKU_3_5: Model = Model {
     supports_tools: true,
     supports_caching: true,
     supports_extended_thinking: false,
+    supports_effort: false,
     cost_per_mtok_input: 0.80,
     cost_per_mtok_output: 4.0,
     description: "Fast and efficient model",
@@ -418,6 +433,7 @@ pub const CLAUDE_HAIKU_3: Model = Model {
     supports_tools: true,
     supports_caching: true,
     supports_extended_thinking: false,
+    supports_effort: false,
     cost_per_mtok_input: 0.25,
     cost_per_mtok_output: 1.25,
     description: "Original fast model",
