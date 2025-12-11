@@ -8,6 +8,7 @@ A native Rust implementation of the Claude API client with streaming support, to
 - ✅ **Streaming API** - Stream responses with Server-Sent Events in real-time
 - ✅ **Tool Use** - Define and execute tools with programmatic calling
 - ✅ **Conversation Management** - Multi-turn conversations with ConversationBuilder
+- ✅ **Retry Logic** - Exponential backoff for rate limits and transient errors
 - 🚧 **Prompt Caching** - Types ready, integration in progress
 - 🚧 **AWS Bedrock** - Model IDs ready, client implementation in progress
 - 🦀 **Idiomatic Rust** - Type-safe, async/await, zero-cost abstractions
@@ -165,6 +166,37 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
+### Retry Logic for Production
+
+```rust
+use claude_sdk::{ClaudeClient, MessagesRequest, Message};
+use claude_sdk::retry::RetryConfig;
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let client = ClaudeClient::anthropic(
+        std::env::var("ANTHROPIC_API_KEY")?
+    );
+
+    let request = MessagesRequest::new(
+        claude_sdk::models::CLAUDE_SONNET_4_5.anthropic_id,
+        1024,
+        vec![Message::user("Hello!")],
+    );
+
+    // Configure retry behavior
+    let retry_config = RetryConfig::new()
+        .with_max_attempts(5)
+        .with_initial_backoff(std::time::Duration::from_secs(1))
+        .with_max_backoff(std::time::Duration::from_secs(60));
+
+    // Automatically retries on rate limits and server errors
+    let response = client.send_message_with_retry(request, retry_config).await?;
+
+    Ok(())
+}
+```
+
 ## Examples
 
 Run the examples with your API key:
@@ -203,11 +235,12 @@ Available examples:
 - [x] Model registry with constraints
 - [x] Bedrock regional/global endpoints
 - [x] Prompt caching types (CacheControl)
+- [x] Retry logic with exponential backoff
+- [x] Respects retry-after headers
 
 ### 🚧 In Progress
 
 - [ ] Token counting (tiktoken-rs)
-- [ ] Retry logic with backoff
 
 ### 📋 Planned
 
@@ -229,14 +262,16 @@ Available examples:
 - Multi-turn conversations with ConversationBuilder
 - Programmatic tool calling
 - Tool result handling
+- Retry logic with exponential backoff
+- Comprehensive error handling
 
 **Phase 3 (Advanced Features) - In Progress 🚧**
 - Token counting
-- Retry logic with backoff
 - AWS Bedrock client
 - Interactive REPL
+- More examples and integration tests
 
-**Progress: 8 of 17 features complete (47%)**
+**Progress: 10 of 17 features complete (59%)**
 
 See [.claude/system/features.json](.claude/system/features.json) for detailed feature tracking.
 

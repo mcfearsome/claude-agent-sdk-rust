@@ -318,6 +318,56 @@ impl ClaudeClient {
             }
         }
     }
+
+    /// Send a message with automatic retry on transient failures
+    ///
+    /// This method automatically retries on rate limits (429) and server errors (5xx)
+    /// using exponential backoff. Use the provided `RetryConfig` to customize behavior.
+    ///
+    /// # Example
+    ///
+    /// ```rust,no_run
+    /// use claude_sdk::{ClaudeClient, MessagesRequest, Message};
+    /// use claude_sdk::retry::RetryConfig;
+    ///
+    /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+    /// let client = ClaudeClient::anthropic("your-api-key");
+    ///
+    /// let request = MessagesRequest::new(
+    ///     claude_sdk::models::CLAUDE_SONNET_4_5.anthropic_id,
+    ///     1024,
+    ///     vec![Message::user("Hello!")],
+    /// );
+    ///
+    /// let config = RetryConfig::new().with_max_attempts(5);
+    /// let response = client.send_message_with_retry(request, config).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn send_message_with_retry(
+        &self,
+        request: MessagesRequest,
+        config: crate::retry::RetryConfig,
+    ) -> Result<MessagesResponse> {
+        crate::retry::retry_with_backoff(config, || async {
+            self.send_message(request.clone()).await
+        })
+        .await
+    }
+
+    /// Send a streaming message with automatic retry on transient failures
+    ///
+    /// Note: Retries create a new stream, so partial results from failed attempts are lost.
+    pub async fn send_streaming_with_retry(
+        &self,
+        request: MessagesRequest,
+        config: crate::retry::RetryConfig,
+    ) -> Result<Pin<Box<dyn Stream<Item = Result<StreamEvent>> + Send>>> {
+        crate::retry::retry_with_backoff(config, || async {
+            self.send_streaming(request.clone()).await
+        })
+        .await
+    }
 }
 
 #[cfg(test)]

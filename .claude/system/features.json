@@ -77,19 +77,19 @@
       "id": "SDK009",
       "name": "Error handling taxonomy",
       "description": "Comprehensive error types: APIError (4xx/5xx), NetworkError, ParseError, RateLimitError (with retry-after). Use thiserror for library errors.",
-      "status": "new",
+      "status": "completed",
       "priority": 2,
       "dependencies": ["SDK001"],
-      "notes": []
+      "notes": ["Complete error taxonomy with thiserror, is_retryable() and retry_after() helpers"]
     },
     {
       "id": "SDK010",
       "name": "Retry logic with backoff",
       "description": "Implement exponential backoff for rate limits (429) and server errors (5xx). Respect retry-after headers. Use tokio::time::sleep.",
-      "status": "new",
+      "status": "completed",
       "priority": 3,
       "dependencies": ["SDK009"],
-      "notes": []
+      "notes": ["RetryConfig with exponential backoff, retry_with_backoff(), send_message_with_retry(), respects retry-after headers"]
     },
     {
       "id": "SDK011",
