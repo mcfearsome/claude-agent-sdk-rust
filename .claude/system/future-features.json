@@ -5,15 +5,19 @@
     {
       "id": "SDK018",
       "name": "Extended Thinking Support",
-      "description": "Support for Claude's extended thinking feature where the model shows its reasoning process. Requires anthropic-beta: thinking-2025-12-05 header.",
+      "description": "Support for Claude's extended thinking feature where the model shows its reasoning process.",
       "priority": 2,
-      "status": "planned",
+      "status": "completed",
       "dependencies": ["SDK005"],
       "notes": [
-        "Add thinking content blocks in streaming responses",
-        "Track thinking tokens separately in usage",
-        "Add enable_thinking field to MessagesRequest",
-        "Example showing reasoning process visualization"
+        "Thinking and RedactedThinking content blocks",
+        "ThinkingConfig enum: Enabled {budget_tokens} | Disabled",
+        "ThinkingDelta and SignatureDelta for streaming",
+        "ExtendedUsage with thinking_tokens field",
+        "Supported models: Sonnet/Haiku/Opus 4.5+, Sonnet 4, Opus 4.1/4, Sonnet 3.7",
+        "Claude 4+ returns summarized thinking (billed for full)",
+        "Interleaved thinking beta: interleaved-thinking-2025-05-14",
+        "Token counter handles thinking blocks"
       ]
     },
     {
@@ -52,15 +56,19 @@
       "name": "Batch API Support",
       "description": "Support for Claude's batch API for processing multiple requests asynchronously at 50% cost.",
       "priority": 3,
-      "status": "planned",
+      "status": "completed",
       "dependencies": ["SDK001"],
       "notes": [
-        "New endpoint: POST /v1/messages/batches",
-        "Batch creation, status checking, result retrieval",
-        "24-hour processing window",
-        "50% discount on batch requests",
-        "Separate BatchClient or add to ClaudeClient",
-        "Example showing batch job creation and polling"
+        "BatchClient with create/retrieve/list/cancel/results methods",
+        "BatchRequest with custom_id and params",
+        "MessageBatch with processing_status and request_counts",
+        "BatchResultType enum: Succeeded/Errored/Canceled/Expired",
+        "wait_for_completion() polls every 60s until ended",
+        "results() streams JSONL response line-by-line",
+        "50% discount on all token usage",
+        "Max: 100,000 requests or 256 MB per batch",
+        "Results available for 29 days",
+        "3 integration tests marked #[ignore]"
       ]
     },
     {

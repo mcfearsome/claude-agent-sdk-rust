@@ -51,13 +51,12 @@ pub enum ClaudeBackend {
 ///
 /// # Example - AWS Bedrock
 ///
-/// ```rust,no_run
-/// # #[cfg(feature = "bedrock")]
+/// ```rust,ignore
 /// use claude_sdk::ClaudeClient;
 ///
-/// # #[cfg(feature = "bedrock")]
 /// #[tokio::main]
 /// async fn main() -> Result<(), Box<dyn std::error::Error>> {
+///     // Requires --features bedrock
 ///     let client = ClaudeClient::bedrock("us-east-1").await?;
 ///     Ok(())
 /// }

@@ -12,6 +12,10 @@ A native Rust implementation of the Claude API client with streaming support, to
 - ✅ **Prompt Caching** - 90% cost reduction on cached content
 - ✅ **AWS Bedrock** - Full support with streaming (invoke_model)
 - ✅ **Token Counting** - Accurate estimates with tiktoken-rs for context management
+- ✅ **Extended Thinking** - Step-by-step reasoning with thinking blocks
+- ✅ **Batch Processing** - 50% cost discount for async bulk requests
+- ✅ **Vision** - Image analysis with base64/URL/file_id
+- ✅ **Files API** - Upload once, use many times
 - 🦀 **Idiomatic Rust** - Type-safe, async/await, zero-cost abstractions
 - 📦 **Standalone** - No FFI, no subprocesses, pure Rust
 
@@ -283,7 +287,14 @@ Available examples:
 - Runtime backend switching
 - Token counting in prompt
 
-**Progress: 15 of 17 core features complete (88%)**
+**Phase 5 (Advanced Features) - COMPLETE ✅**
+- Extended thinking (step-by-step reasoning)
+- Batch processing (50% cost reduction)
+- Vision support (images)
+- Files API (upload/download/manage)
+- Document blocks (PDFs with citations)
+
+**Progress: 20 of 20 features complete (100%)** 🎉
 
 See [.claude/system/features.json](.claude/system/features.json) for detailed feature tracking.
 
