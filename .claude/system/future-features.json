@@ -80,15 +80,22 @@
     },
     {
       "id": "SDK023",
-      "name": "Embeddings Support",
-      "description": "Support for Anthropic's embeddings API (if/when released). Currently not available.",
-      "priority": 5,
-      "status": "blocked",
-      "dependencies": [],
+      "name": "Embeddings Support (Voyage AI Integration)",
+      "description": "First-class embeddings support via Voyage AI integration. Anthropic recommends Voyage AI for embeddings.",
+      "priority": 2,
+      "status": "planned",
+      "dependencies": ["SDK001"],
       "notes": [
-        "BLOCKED: Anthropic doesn't have embeddings API yet",
-        "Use Voyage AI or similar in meantime",
-        "Add when Anthropic releases embeddings"
+        "Anthropic recommends Voyage AI (doesn't offer own embeddings)",
+        "Implement VoyageClient with embed() method",
+        "Models: voyage-3-large, voyage-3.5, voyage-3.5-lite, voyage-code-3",
+        "Domain-specific: voyage-finance-2, voyage-law-2",
+        "Multimodal: voyage-multimodal-3 (text + images)",
+        "Features: Matryoshka (truncatable), quantization (int8, binary)",
+        "Use cases: RAG, semantic search, clustering, recommendations",
+        "Optional feature flag: embeddings = ['voyage-ai-client']",
+        "Example: Document retrieval pipeline with Claude",
+        "Example: RAG with embeddings + search_result blocks"
       ]
     },
     {
@@ -124,15 +131,52 @@
     {
       "id": "SDK026",
       "name": "Files API Support",
-      "description": "Support for Claude's file upload API (if/when released). Currently not available via API.",
-      "priority": 5,
-      "status": "blocked",
-      "dependencies": [],
+      "description": "Support for Claude's file upload/download API. Upload files once, reference by file_id. Beta: files-api-2025-04-14",
+      "priority": 2,
+      "status": "planned",
+      "dependencies": ["SDK001"],
       "notes": [
-        "BLOCKED: File uploads only available in web UI currently",
-        "Would enable: Upload files, reference in conversation",
-        "Monitor: https://docs.anthropic.com/en/api for file API",
-        "Add when API becomes available"
+        "API: POST /v1/files (upload), GET /v1/files (list), DELETE /v1/files/{id}",
+        "Beta header: anthropic-beta: files-api-2025-04-14",
+        "Max file size: 500 MB, storage limit: 100 GB per org",
+        "Supported: Images, PDFs, text files, datasets",
+        "Use with image/document content blocks",
+        "Free to upload/download, charged as input tokens when used",
+        "Only download files created by code execution tool",
+        "Implement: FilesClient with upload/list/retrieve/delete/download"
+      ]
+    },
+    {
+      "id": "SDK030",
+      "name": "Search Results Content Blocks",
+      "description": "Support search_result content blocks for RAG applications with automatic citations.",
+      "priority": 2,
+      "status": "planned",
+      "dependencies": ["SDK002"],
+      "notes": [
+        "Add SearchResult content block type",
+        "Fields: source (URL), title, content (text blocks), citations (enabled)",
+        "Use in: Tool results (dynamic RAG) or top-level (pre-fetched)",
+        "Claude automatically cites sources when using search results",
+        "Citation tracking: search_result_location with cited_text",
+        "Supported in: Opus 4.5, Opus 4.1, Opus 4, Sonnet 4.5, Sonnet 4, Haiku 3.5",
+        "Example: RAG with automatic source attribution"
+      ]
+    },
+    {
+      "id": "SDK031",
+      "name": "Document Content Blocks",
+      "description": "Support document content blocks for PDFs and text files via Files API.",
+      "priority": 2,
+      "status": "planned",
+      "dependencies": ["SDK026"],
+      "notes": [
+        "Add Document content block type",
+        "Source: file_id or base64",
+        "Optional: title, context, citations.enabled",
+        "Supported: PDF (application/pdf), plain text (text/plain)",
+        "Use with Files API for avoid re-uploading",
+        "Example: PDF analysis with citations"
       ]
     },
     {
@@ -208,22 +252,24 @@
 
   "implementation_notes": {
     "immediate_priority": [
-      "SDK019 (Vision) - Models already support it",
-      "SDK020 (Structured outputs) - tool_choice parameter",
-      "SDK018 (Extended thinking) - Available with beta header"
+      "SDK019 (Vision) - Image blocks with base64/URL/file_id",
+      "SDK026 (Files API) - Upload/download files, beta available",
+      "SDK030 (Search results) - RAG with automatic citations",
+      "SDK031 (Document blocks) - PDFs and text files",
+      "SDK020 (Structured outputs) - tool_choice parameter"
     ],
     "medium_priority": [
+      "SDK018 (Extended thinking) - Available with beta header",
       "SDK021 (Batch API) - Good for cost reduction",
       "SDK024 (Context editing) - Needs SDK008 first"
     ],
     "blocked_on_api": [
       "SDK023 (Embeddings) - Anthropic doesn't offer yet",
-      "SDK026 (Files API) - Not available via API",
       "SDK028 (Effort parameter) - Not in API yet"
     ],
     "nice_to_have": [
-      "SDK022 (PDF) - Can build on vision",
-      "SDK025 (Citations) - Application-level pattern",
+      "SDK022 (PDF) - Built on document blocks",
+      "SDK025 (Citations parsing) - Extract citations from responses",
       "SDK027 (Multilingual) - Just conveniences"
     ]
   }
