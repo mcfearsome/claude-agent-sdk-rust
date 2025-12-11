@@ -1,0 +1,47 @@
+# Claude SDK Rust Port — Project Rules
+
+## Design Goals
+
+1. Native Rust implementation — no FFI, no subprocess, pure Rust
+2. Idiomatic async Rust — tokio runtime, async/await, Stream trait
+3. Type-safe throughout — leverage Rust type system, no stringly-typed APIs
+4. Zero-copy where possible — use references, avoid unnecessary allocations
+5. Standalone crate — can be used outside Colony Shell
+
+## API Compliance
+
+6. Match official Claude API exactly — field names, types, behavior
+7. Support all Claude 3+ models — Opus, Sonnet, Haiku
+8. Implement streaming and non-streaming — both modes fully supported
+9. Tool use with programmatic calling — disable_user_input field supported
+10. Handle all error cases — network, API errors, rate limits
+11. Support Amazon Bedrock deployment — AWS SigV4 auth, different endpoint
+12. Abstract over Anthropic vs Bedrock differences — unified client interface
+
+## Technical Stack
+
+13. HTTP client: reqwest with rustls
+14. Async runtime: tokio
+15. Serialization: serde, serde_json
+16. Error handling: thiserror for library, anyhow for examples
+17. Streaming: tokio-stream, futures for Stream trait
+18. SSE parsing: eventsource-stream or custom implementation
+19. AWS integration: aws-config, aws-sigv4, aws-types for Bedrock
+20. Testing: tokio::test for async tests
+
+## Code Quality
+
+21. All public APIs have doc comments with examples
+22. Integration tests with real API (gated by ANTHROPIC_API_KEY and AWS_PROFILE env)
+23. Unit tests for parsing, error handling, builders
+24. No unwrap() in library code — always propagate errors
+25. Use tracing for structured logging, not println!
+26. Clippy clean with deny(warnings) in CI
+
+## Non-Goals
+
+27. NOT a wrapper around TypeScript SDK
+28. NOT supporting Claude 2 legacy API
+29. NOT supporting Azure OpenAI or other Claude deployments (Anthropic + Bedrock only)
+30. NOT implementing agent orchestration (that's Colony Shell's job)
+31. NOT building production chat UI (REPL is for testing/demo only)

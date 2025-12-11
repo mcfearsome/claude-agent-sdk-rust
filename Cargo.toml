@@ -1,0 +1,63 @@
+[package]
+name = "claude-sdk"
+version = "0.1.0"
+edition = "2021"
+authors = ["Claude Agent SDK Contributors"]
+description = "Native Rust SDK for the Claude API with streaming support and tool execution"
+license = "MIT"
+repository = "https://github.com/mcfearsome/claude-agent-sdk-rust"
+keywords = ["claude", "anthropic", "ai", "llm", "sdk"]
+categories = ["api-bindings", "asynchronous"]
+
+[dependencies]
+# HTTP client
+reqwest = { version = "0.11", features = ["json", "stream", "rustls-tls"], default-features = false }
+tokio = { version = "1", features = ["full"] }
+tokio-stream = "0.1"
+futures = "0.3"
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# Error handling
+thiserror = "1"
+
+# Logging
+tracing = "0.1"
+
+# SSE parsing (for streaming)
+eventsource-stream = "0.2"
+bytes = "1"
+
+[dev-dependencies]
+anyhow = "1"
+tokio-test = "0.4"
+tracing-subscriber = "0.3"
+
+[features]
+default = ["anthropic"]
+anthropic = []
+bedrock = ["aws-config", "aws-sigv4", "aws-types", "aws-credential-types"]
+full = ["anthropic", "bedrock"]
+
+# Bedrock dependencies (optional)
+[dependencies.aws-config]
+version = "1"
+optional = true
+
+[dependencies.aws-sigv4]
+version = "1"
+optional = true
+
+[dependencies.aws-types]
+version = "1"
+optional = true
+
+[dependencies.aws-credential-types]
+version = "1"
+optional = true
+
+[[example]]
+name = "simple_chat"
+path = "examples/simple_chat.rs"

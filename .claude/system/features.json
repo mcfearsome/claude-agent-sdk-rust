@@ -1,0 +1,167 @@
+{
+  "version": 1,
+  "features": [
+    {
+      "id": "SDK001",
+      "name": "HTTP client foundation",
+      "description": "reqwest-based client with API key auth, proper headers (anthropic-version, x-api-key), error types using thiserror",
+      "status": "completed",
+      "priority": 1,
+      "dependencies": [],
+      "notes": ["Implemented with reqwest, full error taxonomy, retry-after header parsing"]
+    },
+    {
+      "id": "SDK002",
+      "name": "Request/response types",
+      "description": "Complete serde models for MessagesRequest, MessagesResponse, Message, Content, Tool, ToolUse, ToolResult. Match official API exactly.",
+      "status": "completed",
+      "priority": 1,
+      "dependencies": [],
+      "notes": ["All types implemented with serde, includes prompt caching support, Model registry with 9 models"]
+    },
+    {
+      "id": "SDK003",
+      "name": "Non-streaming messages",
+      "description": "Implement send_message() for synchronous completion. Parse JSON response, handle errors, return typed MessagesResponse.",
+      "status": "completed",
+      "priority": 1,
+      "dependencies": ["SDK001", "SDK002"],
+      "notes": ["Working send_message(), tested with simple_chat example"]
+    },
+    {
+      "id": "SDK004",
+      "name": "SSE streaming parser",
+      "description": "Parse Server-Sent Events stream using eventsource-stream or custom parser. Handle all event types: message_start, content_block_start, content_block_delta, content_block_stop, message_delta, message_stop.",
+      "status": "new",
+      "priority": 2,
+      "dependencies": ["SDK001", "SDK002"],
+      "notes": []
+    },
+    {
+      "id": "SDK005",
+      "name": "Streaming messages API",
+      "description": "Implement send_streaming() returning impl Stream<Item = Result<StreamEvent>>. Use tokio streams for async iteration.",
+      "status": "new",
+      "priority": 2,
+      "dependencies": ["SDK004"],
+      "notes": []
+    },
+    {
+      "id": "SDK006",
+      "name": "Tool use primitives",
+      "description": "Types for Tool definition, ToolUse in responses, ToolResult in requests. Support disable_user_input field for programmatic calling.",
+      "status": "new",
+      "priority": 2,
+      "dependencies": ["SDK002"],
+      "notes": []
+    },
+    {
+      "id": "SDK007",
+      "name": "Multi-turn conversation builder",
+      "description": "Builder pattern for conversation history management. Handle role alternation (user/assistant), tool use/results, proper message formatting.",
+      "status": "new",
+      "priority": 3,
+      "dependencies": ["SDK003", "SDK006"],
+      "notes": []
+    },
+    {
+      "id": "SDK008",
+      "name": "Token counting",
+      "description": "Estimate token counts using tiktoken-rs or similar. Needed for context window management (200K tokens for Claude 3.5 Sonnet).",
+      "status": "new",
+      "priority": 3,
+      "dependencies": ["SDK002"],
+      "notes": []
+    },
+    {
+      "id": "SDK009",
+      "name": "Error handling taxonomy",
+      "description": "Comprehensive error types: APIError (4xx/5xx), NetworkError, ParseError, RateLimitError (with retry-after). Use thiserror for library errors.",
+      "status": "new",
+      "priority": 2,
+      "dependencies": ["SDK001"],
+      "notes": []
+    },
+    {
+      "id": "SDK010",
+      "name": "Retry logic with backoff",
+      "description": "Implement exponential backoff for rate limits (429) and server errors (5xx). Respect retry-after headers. Use tokio::time::sleep.",
+      "status": "new",
+      "priority": 3,
+      "dependencies": ["SDK009"],
+      "notes": []
+    },
+    {
+      "id": "SDK011",
+      "name": "Examples and integration tests",
+      "description": "Example binaries: simple chat, streaming chat, tool use, multi-turn conversation. Integration tests against real API (gated by env var).",
+      "status": "new",
+      "priority": 4,
+      "dependencies": ["SDK005", "SDK007"],
+      "notes": []
+    },
+    {
+      "id": "SDK012",
+      "name": "Documentation and publishing",
+      "description": "README with quickstart, API docs with examples, publish to crates.io as 'claude-sdk' or 'anthropic-sdk-rust'.",
+      "status": "new",
+      "priority": 4,
+      "dependencies": ["SDK011"],
+      "notes": []
+    },
+    {
+      "id": "SDK013",
+      "name": "Prompt caching support",
+      "description": "Support API prompt caching via cache_control blocks. Reduces costs by caching system prompts, tool definitions, and long context. Add CacheControl type, support in Message content.",
+      "status": "new",
+      "priority": 2,
+      "dependencies": ["SDK002", "SDK006"],
+      "notes": [
+        "API feature - cache_control blocks mark cacheable content",
+        "Supports ephemeral (5 min TTL) caching",
+        "Saves tokens/cost on repeated context (system prompt, tools)",
+        "Just need to add cache_control field to content blocks"
+      ]
+    },
+    {
+      "id": "SDK014",
+      "name": "Amazon Bedrock support",
+      "description": "Support Claude models via AWS Bedrock. Implement AWS SigV4 signing, bedrock-runtime endpoint, handle different request/response envelope format.",
+      "status": "new",
+      "priority": 3,
+      "dependencies": ["SDK003", "SDK005"],
+      "notes": [
+        "Bedrock uses AWS SigV4 authentication instead of API keys",
+        "Endpoint: bedrock-runtime.{region}.amazonaws.com",
+        "Request/response wrapped in Bedrock envelope",
+        "Use aws-config and aws-sigv4 crates"
+      ]
+    },
+    {
+      "id": "SDK015",
+      "name": "Interactive REPL",
+      "description": "Build interactive REPL binary for testing and debugging. Features: multi-turn chat, tool execution preview, streaming display, conversation save/load, token counting display.",
+      "status": "new",
+      "priority": 4,
+      "dependencies": ["SDK005", "SDK007", "SDK013"],
+      "notes": [
+        "Separate binary: src/bin/claude-repl.rs",
+        "Use rustyline for readline functionality",
+        "Display streaming responses in real-time",
+        "Show token usage and costs",
+        "Save conversations to JSON",
+        "Test tool calls interactively",
+        "Useful for SDK demos and debugging"
+      ]
+    },
+    {
+      "id": "SDK016",
+      "name": "Documentation and publishing",
+      "description": "README with quickstart, API docs with examples, publish to crates.io as 'claude-sdk' or 'anthropic-sdk-rust'.",
+      "status": "new",
+      "priority": 5,
+      "dependencies": ["SDK011", "SDK014", "SDK015"],
+      "notes": []
+    }
+  ]
+}

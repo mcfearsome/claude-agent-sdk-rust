@@ -1,0 +1,32 @@
+# Claude SDK Rust Port — Development History
+# Format: [YYYY-MM-DD HH:MM] ACTION: Description
+
+[2025-12-11 00:00] START: Project initialized
+[2025-12-11 00:00] SETUP: Created .claude/system tracking structure
+[2025-12-11 00:00] SETUP: Defined all SDK features (SDK001-SDK016)
+[2025-12-11 00:00] PROGRESS: Initialized Cargo.toml with dependencies
+[2025-12-11 00:00] PROGRESS: SDK001 COMPLETE - HTTP client foundation with reqwest
+[2025-12-11 00:00] PROGRESS: SDK002 COMPLETE - Request/response types with full serde support
+[2025-12-11 00:00] PROGRESS: SDK003 COMPLETE - Non-streaming messages API
+[2025-12-11 00:00] PROGRESS: Created simple_chat example demonstrating basic usage
+[2025-12-11 00:00] PROGRESS: Verified code compiles successfully
+[2025-12-11 00:00] FIX: Removed hardcoded model from Default impl, added explicit constructor
+[2025-12-11 00:00] PROGRESS: Created comprehensive README with quickstart guide
+[2025-12-11 00:00] PROGRESS: Created Model struct with constraints and capabilities
+[2025-12-11 00:00] PROGRESS: Fetched latest Claude 4.5 model information from docs
+[2025-12-11 00:00] PROGRESS: Added all current models (Claude 4.5, 4.x, 3.x) with full metadata
+[2025-12-11 00:00] PROGRESS: Structured Model with separate anthropic_id, bedrock_id, vertex_id
+[2025-12-11 00:00] PROGRESS: Added model validation and cost estimation helpers
+[2025-12-11 00:00] PROGRESS: All tests passing (8 unit tests, 6 doc tests)
+[2025-12-11 00:00] FIX: Added bedrock_global_id field for Claude 4.5+ global endpoints
+[2025-12-11 00:00] FIX: Corrected Bedrock IDs to use global. prefix for Claude 4.5 models
+[2025-12-11 00:00] PROGRESS: Added 1M context window support as model capability
+[2025-12-11 00:00] PROGRESS: Added max_context_tokens_extended field for models with beta header support
+[2025-12-11 00:00] PROGRESS: Added supports_extended_context() and max_extended_context() methods
+[2025-12-11 00:00] PROGRESS: Updated validate_request() to accept use_extended_context parameter
+[2025-12-11 00:00] PROGRESS: Updated tests - now 11 unit tests + 6 doc tests, all passing
+[2025-12-11 00:00] FIX: Added BedrockRegion enum for endpoint type selection
+[2025-12-11 00:00] FIX: Added bedrock_id_for_region() method supporting us./eu./ap. prefixes
+[2025-12-11 00:00] PROGRESS: Updated get_model_by_bedrock_id() to handle all regional prefixes
+[2025-12-11 00:00] PROGRESS: Added comprehensive tests for all Bedrock endpoint types
+[2025-12-11 00:00] PROGRESS: All tests passing - 15 unit tests + 7 doc tests
