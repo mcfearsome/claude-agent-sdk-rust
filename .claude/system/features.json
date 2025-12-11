@@ -157,17 +157,20 @@
       "id": "SDK015",
       "name": "Interactive REPL",
       "description": "Build interactive REPL binary for testing and debugging. Features: multi-turn chat, tool execution preview, streaming display, conversation save/load, token counting display.",
-      "status": "new",
+      "status": "completed",
       "priority": 4,
       "dependencies": ["SDK005", "SDK007", "SDK013"],
       "notes": [
-        "Separate binary: src/bin/claude-repl.rs",
-        "Use rustyline for readline functionality",
-        "Display streaming responses in real-time",
-        "Show token usage and costs",
-        "Save conversations to JSON",
-        "Test tool calls interactively",
-        "Useful for SDK demos and debugging"
+        "Binary: src/bin/claude-repl.rs (400+ lines)",
+        "Readline with rustyline for history and editing",
+        "Real-time streaming display with token-in-prompt",
+        "Slash commands: /help, /clear, /save, /load, /tokens, /model, /backend, /quit",
+        "Token counting integrated (shows usage in prompt and after responses)",
+        "Conversation save/load to JSON with timestamps",
+        "Backend switching (anthropic ↔ bedrock) at runtime",
+        "Model switching at runtime",
+        "Tool use detection and display",
+        "Optional feature flag: repl = ['rustyline', 'chrono', 'tracing-subscriber']"
       ]
     },
     {

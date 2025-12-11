@@ -25,6 +25,7 @@ thiserror = "1"
 
 # Logging
 tracing = "0.1"
+tracing-subscriber = { version = "0.3", optional = true }
 
 # SSE parsing (for streaming)
 eventsource-stream = "0.2"
@@ -37,6 +38,10 @@ http = "1"
 # Token counting
 tiktoken-rs = "0.6"
 
+# REPL dependencies
+rustyline = { version = "14", optional = true }
+chrono = { version = "0.4", optional = true }
+
 [dev-dependencies]
 anyhow = "1"
 tokio-test = "0.4"
@@ -46,7 +51,8 @@ tracing-subscriber = "0.3"
 default = ["anthropic"]
 anthropic = []
 bedrock = ["aws-config", "aws-sdk-bedrockruntime"]
-full = ["anthropic", "bedrock"]
+repl = ["rustyline", "chrono", "tracing-subscriber"]
+full = ["anthropic", "bedrock", "repl"]
 
 # Bedrock dependencies (optional) - AWS SDK 1.x (stable)
 [dependencies.aws-config]
@@ -77,3 +83,8 @@ path = "examples/prompt_caching.rs"
 name = "update-changelog"
 path = "src/bin/update-changelog.rs"
 required-features = ["anthropic"]
+
+[[bin]]
+name = "claude-repl"
+path = "src/bin/claude-repl.rs"
+required-features = ["repl"]

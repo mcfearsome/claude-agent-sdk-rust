@@ -276,7 +276,14 @@ Available examples:
 - Context window validation
 - Extended context support (1M tokens)
 
-**Progress: 14 of 17 core features complete (82%)**
+**Phase 4 (Developer Experience) - COMPLETE ✅**
+- Interactive REPL with streaming display
+- Slash commands for configuration
+- Conversation save/load
+- Runtime backend switching
+- Token counting in prompt
+
+**Progress: 15 of 17 core features complete (88%)**
 
 See [.claude/system/features.json](.claude/system/features.json) for detailed feature tracking.
 
@@ -327,6 +334,23 @@ cargo fmt --all
 ```
 
 ### Developer Tools
+
+**Interactive REPL:**
+
+Test the SDK interactively with a full-featured terminal interface:
+
+```bash
+export ANTHROPIC_API_KEY="your-api-key"
+cargo run --features repl --bin claude-repl
+```
+
+Features:
+- Real-time streaming responses
+- Multi-turn conversations
+- Token counting in prompt
+- Slash commands (/help, /save, /load, /tokens, /model, /backend)
+- Backend switching (Anthropic ↔ Bedrock)
+- Conversation save/load
 
 **Automated Changelog Generation:**
 
