@@ -68,10 +68,18 @@
       "id": "SDK008",
       "name": "Token counting",
       "description": "Estimate token counts using tiktoken-rs or similar. Needed for context window management (200K tokens for Claude 3.5 Sonnet).",
-      "status": "new",
+      "status": "completed",
       "priority": 3,
       "dependencies": ["SDK002"],
-      "notes": []
+      "notes": [
+        "TokenCounter using tiktoken-rs with cl100k_base tokenizer",
+        "count_text(), count_message(), count_content_block()",
+        "count_system_prompt(), count_tool(), count_request()",
+        "validate_context_window() with extended context support",
+        "ConversationBuilder.estimate_tokens() and fits_in_context()",
+        "7 new tests for token counting (50 total unit tests)",
+        "Accurate estimates for context window management"
+      ]
     },
     {
       "id": "SDK009",

@@ -250,6 +250,73 @@ impl ConversationBuilder {
     pub fn into_request(self, model: impl Into<String>, max_tokens: u32) -> MessagesRequest {
         self.build(model, max_tokens)
     }
+
+    /// Estimate the number of tokens in the current conversation
+    ///
+    /// This includes system prompt, tools, and all messages.
+    /// Useful for managing context window limits.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use claude_sdk::ConversationBuilder;
+    ///
+    /// let mut conversation = ConversationBuilder::new()
+    ///     .with_system("You are helpful");
+    ///
+    /// conversation.add_user_message("Hello!");
+    ///
+    /// let tokens = conversation.estimate_tokens();
+    /// println!("Conversation uses ~{} tokens", tokens);
+    /// ```
+    pub fn estimate_tokens(&self) -> usize {
+        let counter = crate::tokens::TokenCounter::new();
+        let mut total = 0;
+
+        // System prompt
+        if let Some(system) = &self.system {
+            total += counter.count_system_prompt(system);
+        }
+
+        // Messages
+        for message in &self.messages {
+            total += counter.count_message(message);
+        }
+
+        // Tools
+        for tool in &self.tools {
+            total += counter.count_tool(tool);
+        }
+
+        total
+    }
+
+    /// Check if the conversation would fit in a model's context window
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use claude_sdk::{ConversationBuilder, models};
+    ///
+    /// let mut conversation = ConversationBuilder::new();
+    /// conversation.add_user_message("Hello!");
+    ///
+    /// let model = &models::CLAUDE_SONNET_4_5;
+    /// let fits = conversation.fits_in_context(model, 1024, false);
+    /// println!("Fits: {}", fits);
+    /// ```
+    pub fn fits_in_context(
+        &self,
+        model: &crate::models::Model,
+        max_tokens: u32,
+        use_extended_context: bool,
+    ) -> bool {
+        let counter = crate::tokens::TokenCounter::new();
+        let request = self.build(model.anthropic_id, max_tokens);
+        counter
+            .validate_context_window(&request, model, use_extended_context)
+            .is_ok()
+    }
 }
 
 impl Default for ConversationBuilder {

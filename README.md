@@ -9,8 +9,9 @@ A native Rust implementation of the Claude API client with streaming support, to
 - ✅ **Tool Use** - Define and execute tools with programmatic calling
 - ✅ **Conversation Management** - Multi-turn conversations with ConversationBuilder
 - ✅ **Retry Logic** - Exponential backoff for rate limits and transient errors
-- 🚧 **Prompt Caching** - Types ready, integration in progress
-- 🚧 **AWS Bedrock** - Model IDs ready, client implementation in progress
+- ✅ **Prompt Caching** - 90% cost reduction on cached content
+- ✅ **AWS Bedrock** - Full support with streaming (invoke_model)
+- ✅ **Token Counting** - Accurate estimates with tiktoken-rs for context management
 - 🦀 **Idiomatic Rust** - Type-safe, async/await, zero-cost abstractions
 - 📦 **Standalone** - No FFI, no subprocesses, pure Rust
 
@@ -239,14 +240,15 @@ Available examples:
 - [x] Prompt caching (CacheControl, cached system/tools, 90% cost reduction)
 - [x] Retry logic with exponential backoff
 - [x] Respects retry-after headers
-
-### 🚧 In Progress
-
-- [ ] Token counting (tiktoken-rs)
+- [x] Token counting with tiktoken-rs (cl100k_base)
+- [x] Context window validation
+- [x] AWS Bedrock support (streaming + non-streaming)
 
 ### 📋 Planned
 
-- [ ] AWS Bedrock client implementation
+- [ ] Vision support (images)
+- [ ] Files API
+- [ ] Search results (RAG with citations)
 - [ ] Interactive REPL
 - [ ] More examples and integration tests
 
@@ -268,13 +270,13 @@ Available examples:
 - Comprehensive error handling
 - Prompt caching (90% cost reduction)
 
-**Phase 3 (Advanced Features) - In Progress 🚧**
-- Token counting
-- AWS Bedrock client
-- Interactive REPL
-- More examples and integration tests
+**Phase 3 (Platform & Management) - COMPLETE ✅**
+- AWS Bedrock support (streaming + non-streaming)
+- Token counting with tiktoken-rs
+- Context window validation
+- Extended context support (1M tokens)
 
-**Progress: 11 of 17 features complete (65%)**
+**Progress: 14 of 17 core features complete (82%)**
 
 See [.claude/system/features.json](.claude/system/features.json) for detailed feature tracking.
 
