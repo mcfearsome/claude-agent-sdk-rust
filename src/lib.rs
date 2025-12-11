@@ -27,6 +27,7 @@
 //! ```
 
 pub mod client;
+pub mod conversation;
 pub mod error;
 pub mod models;
 pub mod streaming;
@@ -34,6 +35,7 @@ pub mod types;
 
 // Re-export main types for convenience
 pub use client::ClaudeClient;
+pub use conversation::ConversationBuilder;
 pub use error::{Error, Result};
 pub use models::{BedrockRegion, Model};
 pub use streaming::{ContentDelta, MessageDelta, StreamEvent};

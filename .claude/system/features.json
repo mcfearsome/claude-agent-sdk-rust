@@ -50,19 +50,19 @@
       "id": "SDK006",
       "name": "Tool use primitives",
       "description": "Types for Tool definition, ToolUse in responses, ToolResult in requests. Support disable_user_input field for programmatic calling.",
-      "status": "new",
+      "status": "completed",
       "priority": 2,
       "dependencies": ["SDK002"],
-      "notes": []
+      "notes": ["Tool types implemented in SDK002, runtime support via ConversationBuilder in SDK007"]
     },
     {
       "id": "SDK007",
       "name": "Multi-turn conversation builder",
       "description": "Builder pattern for conversation history management. Handle role alternation (user/assistant), tool use/results, proper message formatting.",
-      "status": "new",
+      "status": "completed",
       "priority": 3,
       "dependencies": ["SDK003", "SDK006"],
-      "notes": []
+      "notes": ["ConversationBuilder with system prompts, tools, messages, tool results, caching support"]
     },
     {
       "id": "SDK008",

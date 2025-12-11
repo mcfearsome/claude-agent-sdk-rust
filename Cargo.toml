@@ -66,6 +66,10 @@ path = "examples/simple_chat.rs"
 name = "streaming_chat"
 path = "examples/streaming_chat.rs"
 
+[[example]]
+name = "tool_use"
+path = "examples/tool_use.rs"
+
 [[bin]]
 name = "update-changelog"
 path = "src/bin/update-changelog.rs"

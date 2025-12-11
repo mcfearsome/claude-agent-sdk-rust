@@ -6,9 +6,10 @@ A native Rust implementation of the Claude API client with streaming support, to
 
 - ✅ **Non-streaming API** - Send messages and get complete responses
 - ✅ **Streaming API** - Stream responses with Server-Sent Events in real-time
-- 🚧 **Tool Use** - Define and execute tools with programmatic calling (coming soon)
-- 🚧 **Prompt Caching** - Reduce costs with prompt caching support (coming soon)
-- 🚧 **AWS Bedrock** - Support for Claude models via AWS Bedrock (coming soon)
+- ✅ **Tool Use** - Define and execute tools with programmatic calling
+- ✅ **Conversation Management** - Multi-turn conversations with ConversationBuilder
+- 🚧 **Prompt Caching** - Types ready, integration in progress
+- 🚧 **AWS Bedrock** - Model IDs ready, client implementation in progress
 - 🦀 **Idiomatic Rust** - Type-safe, async/await, zero-cost abstractions
 - 📦 **Standalone** - No FFI, no subprocesses, pure Rust
 
@@ -91,6 +92,79 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
+### Tool Use with Multi-turn Conversations
+
+```rust
+use claude_sdk::{ClaudeClient, ConversationBuilder, Tool, StreamEvent};
+use futures::StreamExt;
+use serde_json::json;
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let client = ClaudeClient::anthropic(
+        std::env::var("ANTHROPIC_API_KEY")?
+    );
+
+    // Define a tool
+    let weather_tool = Tool {
+        name: "get_weather".into(),
+        description: "Get weather for a location".into(),
+        input_schema: json!({
+            "type": "object",
+            "properties": {
+                "location": {"type": "string"}
+            },
+            "required": ["location"]
+        }),
+        disable_user_input: Some(true), // Programmatic!
+        cache_control: None,
+    };
+
+    // Build conversation with tool
+    let mut conversation = ConversationBuilder::new()
+        .with_system("You are a helpful assistant")
+        .with_tool(weather_tool);
+
+    conversation.add_user_message("What's the weather in NYC?");
+
+    // First turn - Claude requests tool use
+    let request = conversation.build(
+        claude_sdk::models::CLAUDE_SONNET_4_5.anthropic_id,
+        1024
+    );
+    let response = client.send_message(request).await?;
+
+    // Extract tool use
+    for content in &response.content {
+        if let claude_sdk::ContentBlock::ToolUse { id, name, input, .. } = content {
+            println!("Claude wants to use: {}", name);
+
+            // Execute tool (your implementation here)
+            let result = r#"{"temp": 72, "condition": "sunny"}"#;
+
+            // Add tool result
+            conversation.add_tool_result(id, result);
+        }
+    }
+
+    // Second turn - Claude uses the tool result
+    let request = conversation.build(
+        claude_sdk::models::CLAUDE_SONNET_4_5.anthropic_id,
+        1024
+    );
+    let response = client.send_message(request).await?;
+
+    // Claude responds with the answer
+    for content in &response.content {
+        if let claude_sdk::ContentBlock::Text { text, .. } = content {
+            println!("Claude: {}", text);
+        }
+    }
+
+    Ok(())
+}
+```
+
 ## Examples
 
 Run the examples with your API key:
@@ -99,11 +173,13 @@ Run the examples with your API key:
 export ANTHROPIC_API_KEY="your-api-key"
 cargo run --example simple_chat
 cargo run --example streaming_chat
+cargo run --example tool_use
 ```
 
 Available examples:
 - `simple_chat` - Basic message sending with complete responses
 - `streaming_chat` - Real-time streaming responses with token display
+- `tool_use` - Tool definitions, multi-turn conversations, programmatic tool calling
 
 ## Supported Models
 
@@ -117,26 +193,27 @@ Available examples:
 
 - [x] Basic message sending
 - [x] Streaming responses with SSE
+- [x] Tool definitions and tool use
+- [x] Multi-turn conversations (ConversationBuilder)
+- [x] Programmatic tool calling
 - [x] Request/response types
 - [x] Error handling
 - [x] Authentication
 - [x] Token usage tracking
 - [x] Model registry with constraints
 - [x] Bedrock regional/global endpoints
+- [x] Prompt caching types (CacheControl)
 
 ### 🚧 In Progress
 
-- [ ] Tool definitions
-- [ ] Tool use and results
-- [ ] Multi-turn conversations
-- [ ] Prompt caching
+- [ ] Token counting (tiktoken-rs)
+- [ ] Retry logic with backoff
 
 ### 📋 Planned
 
-- [ ] AWS Bedrock client support
-- [ ] Token counting
-- [ ] Retry logic with backoff
+- [ ] AWS Bedrock client implementation
 - [ ] Interactive REPL
+- [ ] More examples and integration tests
 
 ## Development Status
 
@@ -145,11 +222,21 @@ Available examples:
 - Streaming API with SSE
 - Model registry with all Claude 4.5/4.x/3.x models
 - Comprehensive error handling
+- CI/CD automation
 
-**Phase 2 (Tools) - In Progress 🚧**
+**Phase 2 (Tools & Conversations) - COMPLETE ✅**
 - Tool definitions and execution
-- Multi-turn conversations
-- Prompt caching
+- Multi-turn conversations with ConversationBuilder
+- Programmatic tool calling
+- Tool result handling
+
+**Phase 3 (Advanced Features) - In Progress 🚧**
+- Token counting
+- Retry logic with backoff
+- AWS Bedrock client
+- Interactive REPL
+
+**Progress: 8 of 17 features complete (47%)**
 
 See [.claude/system/features.json](.claude/system/features.json) for detailed feature tracking.
 

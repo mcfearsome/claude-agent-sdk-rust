@@ -54,3 +54,14 @@
 [2025-12-11 00:00] PROGRESS: Updated README with development setup and tools
 [2025-12-11 00:00] PROGRESS: Updated RELEASE.md to include automated changelog option
 [2025-12-11 00:00] MILESTONE: Phase 2 complete - SDK001-005, SDK017 all done ✅
+[2025-12-11 00:00] PROGRESS: SDK006 COMPLETE - Tool use primitives (types already in SDK002)
+[2025-12-11 00:00] PROGRESS: SDK007 COMPLETE - ConversationBuilder for multi-turn conversations
+[2025-12-11 00:00] PROGRESS: Implemented system prompts (plain and cached)
+[2025-12-11 00:00] PROGRESS: Implemented tool management (add, cache, list)
+[2025-12-11 00:00] PROGRESS: Implemented message management (user, assistant, tool results)
+[2025-12-11 00:00] PROGRESS: Added helper methods for tool errors and clearing messages
+[2025-12-11 00:00] PROGRESS: Created tool_use example with weather and calculator tools
+[2025-12-11 00:00] PROGRESS: Example shows full cycle: tool request → execution → result → answer
+[2025-12-11 00:00] PROGRESS: Added 7 new tests for ConversationBuilder (25 total unit tests)
+[2025-12-11 00:00] PROGRESS: Updated README with tool use example and progress
+[2025-12-11 00:00] MILESTONE: Phase 2 (Tools & Conversations) COMPLETE - SDK006-007 ✅
