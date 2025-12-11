@@ -1,1 +1,0 @@
-TryUnfold<EventStream<impl Stream<Item = std::result::Result<bytes::Bytes, reqwest::Error>>>, {closure@src/client.rs:230:64: 230:72}, {async block@src/client.rs:230:73: 230:83}>
