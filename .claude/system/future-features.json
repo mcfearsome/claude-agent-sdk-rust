@@ -41,14 +41,16 @@
       "name": "Structured Outputs (JSON Schema)",
       "description": "Force Claude to return structured JSON matching a schema. Uses tool_choice parameter.",
       "priority": 3,
-      "status": "planned",
+      "status": "completed",
       "dependencies": ["SDK006"],
       "notes": [
-        "Add tool_choice field to MessagesRequest",
-        "Support tool_choice: {type: 'tool', name: 'tool_name'}",
-        "Support tool_choice: {type: 'any'} and {type: 'auto'}",
-        "Example showing forced JSON output",
-        "Useful for data extraction, form filling"
+        "tool_choice field in MessagesRequest ✅",
+        "ToolChoice enum: Auto/Any/Tool/None ✅",
+        "structured module with helpers",
+        "json_schema_tool() creates extraction tools",
+        "force_tool() returns ToolChoice::Tool",
+        "Pattern: Define schema tool + force with tool_choice",
+        "Useful for data extraction, form filling, JSON generation"
       ]
     },
     {

@@ -35,6 +35,7 @@ pub mod models;
 pub mod prompts;
 pub mod retry;
 pub mod streaming;
+pub mod structured;
 pub mod tokens;
 pub mod types;
 

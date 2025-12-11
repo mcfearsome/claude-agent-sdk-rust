@@ -19,6 +19,9 @@ pub enum ContentBlock {
         text: String,
         #[serde(skip_serializing_if = "Option::is_none")]
         cache_control: Option<CacheControl>,
+        /// Citations (appears in responses when using search_result blocks)
+        #[serde(skip_serializing_if = "Option::is_none")]
+        citations: Option<Vec<Citation>>,
     },
     /// Image content
     Image {
@@ -70,6 +73,26 @@ pub enum ContentBlock {
     /// Contains encrypted thinking that was flagged by safety systems.
     /// Must be passed back unmodified in multi-turn conversations.
     RedactedThinking { data: String },
+    /// Search result for RAG with automatic citations
+    ///
+    /// Supported in: Opus 4.5, Opus 4.1, Opus 4, Sonnet 4.5, Sonnet 4, Haiku 3.5
+    SearchResult {
+        source: String,
+        title: String,
+        content: Vec<TextBlock>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        citations: Option<CitationConfig>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        cache_control: Option<CacheControl>,
+    },
+}
+
+/// Text block for search result content
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TextBlock {
+    #[serde(rename = "type")]
+    pub block_type: String, // Always "text"
+    pub text: String,
 }
 
 /// Image source for vision
@@ -96,10 +119,32 @@ pub enum DocumentSource {
     Text { media_type: String, data: String },
 }
 
-/// Citation configuration for documents
+/// Citation configuration for documents and search results
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct CitationConfig {
     pub enabled: bool,
+}
+
+/// Citation location in a response
+///
+/// Claude automatically includes these when using search_result blocks
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Citation {
+    #[serde(rename = "type")]
+    pub citation_type: String, // "search_result_location"
+
+    pub source: String,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub title: Option<String>,
+
+    pub cited_text: String,
+
+    pub search_result_index: usize,
+
+    pub start_block_index: usize,
+
+    pub end_block_index: usize,
 }
 
 /// Cache control for prompt caching
@@ -139,6 +184,7 @@ impl Message {
             content: vec![ContentBlock::Text {
                 text: text.into(),
                 cache_control: None,
+                citations: None,
             }],
         }
     }
@@ -150,6 +196,7 @@ impl Message {
             content: vec![ContentBlock::Text {
                 text: text.into(),
                 cache_control: None,
+                citations: None,
             }],
         }
     }
@@ -534,6 +581,7 @@ mod tests {
         let content = ContentBlock::Text {
             text: "test".into(),
             cache_control: Some(CacheControl::ephemeral()),
+            citations: None,
         };
 
         let json = serde_json::to_value(&content).unwrap();

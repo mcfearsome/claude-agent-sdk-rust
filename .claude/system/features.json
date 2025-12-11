@@ -247,6 +247,39 @@
         "Use with Files API file_id or inline text with media_type",
         "Token counter estimates overhead + optional fields"
       ]
+    },
+    {
+      "id": "SDK030",
+      "name": "Search Results Content Blocks",
+      "description": "Support search_result content blocks for RAG applications with automatic citations.",
+      "status": "completed",
+      "priority": 2,
+      "dependencies": ["SDK002"],
+      "notes": [
+        "SearchResult content block with source, title, content (text blocks)",
+        "CitationConfig for enabling automatic citations",
+        "Citation type for response citations (search_result_location)",
+        "Use in tool results (dynamic RAG) or top-level (pre-fetched)",
+        "Claude automatically cites sources when citations enabled",
+        "Text blocks can have optional citations field",
+        "Supported: Opus 4.5, Opus 4.1/4, Sonnet 4.5/4, Haiku 3.5",
+        "Token counter handles search result blocks"
+      ]
+    },
+    {
+      "id": "SDK020",
+      "name": "Structured Outputs",
+      "description": "Force structured JSON outputs using tool_choice with schema validation.",
+      "status": "completed",
+      "priority": 2,
+      "dependencies": ["SDK006"],
+      "notes": [
+        "structured module with json_schema_tool() and force_tool() helpers",
+        "Pattern: Define schema tool + ToolChoice::Tool to force it",
+        "tool_choice already implemented in MessagesRequest",
+        "Enables guaranteed JSON extraction",
+        "Useful for data extraction, form filling, JSON generation"
+      ]
     }
   ]
 }

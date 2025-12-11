@@ -123,6 +123,23 @@ impl TokenCounter {
                 // Redacted thinking is encrypted, estimate similar to regular thinking
                 100 // Rough estimate for encrypted overhead
             }
+            ContentBlock::SearchResult {
+                source,
+                title,
+                content,
+                ..
+            } => {
+                let mut total = 10; // Base overhead
+                total += self.count_text(source);
+                total += self.count_text(title);
+
+                // Count all text blocks in content
+                for text_block in content {
+                    total += self.count_text(&text_block.text);
+                }
+
+                total
+            }
         }
     }
 
