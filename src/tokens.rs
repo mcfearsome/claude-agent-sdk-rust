@@ -74,6 +74,28 @@ impl TokenCounter {
                 total += self.count_text(text);
                 total
             }
+            ContentBlock::Image { .. } => {
+                // Images are charged based on size, not token count
+                // Approximate: ~85 tokens per image (varies by size)
+                // See: https://docs.anthropic.com/en/docs/build-with-claude/vision#image-costs
+                85
+            }
+            ContentBlock::Document { title, context, .. } => {
+                // Documents charged as tokens based on extracted text
+                // Approximate overhead + optional fields
+                let mut total = 10; // Base overhead
+
+                if let Some(t) = title {
+                    total += self.count_text(t);
+                }
+                if let Some(c) = context {
+                    total += self.count_text(c);
+                }
+
+                // Note: Actual document content tokens depend on document size
+                // This is just the metadata overhead
+                total
+            }
             ContentBlock::ToolUse { name, input, .. } => {
                 let mut total = 4; // Type and structure overhead
                 total += self.count_text(name);

@@ -29,6 +29,7 @@
 pub mod client;
 pub mod conversation;
 pub mod error;
+pub mod files;
 pub mod models;
 pub mod prompts;
 pub mod retry;

@@ -196,6 +196,57 @@
         "RELEASE.md documents complete release process with version bumping",
         "CHANGELOG.md created following Keep a Changelog format"
       ]
+    },
+    {
+      "id": "SDK019",
+      "name": "Vision Support",
+      "description": "Support for image inputs in messages using base64, URLs, or file_id from Files API.",
+      "status": "completed",
+      "priority": 2,
+      "dependencies": ["SDK002"],
+      "notes": [
+        "Image content block with ImageSource enum (Base64/Url/File)",
+        "Supports: image/jpeg, image/png, image/gif, image/webp",
+        "Base64: Inline encoded images",
+        "Url: External image URLs",
+        "File: References file_id from Files API",
+        "Token counter estimates ~85 tokens per image",
+        "Ready for vision-based tasks"
+      ]
+    },
+    {
+      "id": "SDK026",
+      "name": "Files API Support",
+      "description": "Upload and manage files to use with Claude API. Upload once, reference by file_id.",
+      "status": "completed",
+      "priority": 2,
+      "dependencies": ["SDK001"],
+      "notes": [
+        "FilesClient with upload/list/get_metadata/delete/download",
+        "Beta header: files-api-2025-04-14",
+        "Max: 500 MB per file, 100 GB total storage",
+        "FileMetadata type with all fields",
+        "Multipart file upload with reqwest",
+        "Free to upload/list/delete, charged as input tokens when used",
+        "Can only download files from code execution tool",
+        "Integration test marked #[ignore]"
+      ]
+    },
+    {
+      "id": "SDK031",
+      "name": "Document Content Blocks",
+      "description": "Support for PDF and text document content blocks via Files API or inline text.",
+      "status": "completed",
+      "priority": 2,
+      "dependencies": ["SDK026"],
+      "notes": [
+        "Document content block with DocumentSource enum (File/Text)",
+        "Optional: title, context, citations.enabled",
+        "CitationConfig type for enabling citations",
+        "Supports PDF (application/pdf) and text (text/plain)",
+        "Use with Files API file_id or inline text with media_type",
+        "Token counter estimates overhead + optional fields"
+      ]
     }
   ]
 }

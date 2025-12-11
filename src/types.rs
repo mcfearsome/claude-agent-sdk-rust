@@ -20,6 +20,26 @@ pub enum ContentBlock {
         #[serde(skip_serializing_if = "Option::is_none")]
         cache_control: Option<CacheControl>,
     },
+    /// Image content
+    Image {
+        source: ImageSource,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        cache_control: Option<CacheControl>,
+    },
+    /// Document content (PDFs, text files)
+    ///
+    /// Requires beta header: `anthropic-beta: files-api-2025-04-14`
+    Document {
+        source: DocumentSource,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        title: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        context: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        citations: Option<CitationConfig>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        cache_control: Option<CacheControl>,
+    },
     /// Tool use request from the assistant
     ToolUse {
         id: String,
@@ -36,6 +56,36 @@ pub enum ContentBlock {
         #[serde(skip_serializing_if = "Option::is_none")]
         is_error: Option<bool>,
     },
+}
+
+/// Image source for vision
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum ImageSource {
+    /// Base64-encoded image
+    Base64 { media_type: String, data: String },
+    /// Image URL
+    Url { url: String },
+    /// File ID from Files API
+    ///
+    /// Requires beta header: `anthropic-beta: files-api-2025-04-14`
+    File { file_id: String },
+}
+
+/// Document source
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum DocumentSource {
+    /// File ID from Files API
+    File { file_id: String },
+    /// Inline text document
+    Text { media_type: String, data: String },
+}
+
+/// Citation configuration for documents
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct CitationConfig {
+    pub enabled: bool,
 }
 
 /// Cache control for prompt caching
