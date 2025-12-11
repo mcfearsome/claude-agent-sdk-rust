@@ -206,12 +206,14 @@ export ANTHROPIC_API_KEY="your-api-key"
 cargo run --example simple_chat
 cargo run --example streaming_chat
 cargo run --example tool_use
+cargo run --example prompt_caching
 ```
 
 Available examples:
 - `simple_chat` - Basic message sending with complete responses
 - `streaming_chat` - Real-time streaming responses with token display
 - `tool_use` - Tool definitions, multi-turn conversations, programmatic tool calling
+- `prompt_caching` - Cost reduction with prompt caching (90% savings on cached tokens)
 
 ## Supported Models
 
@@ -234,7 +236,7 @@ Available examples:
 - [x] Token usage tracking
 - [x] Model registry with constraints
 - [x] Bedrock regional/global endpoints
-- [x] Prompt caching types (CacheControl)
+- [x] Prompt caching (CacheControl, cached system/tools, 90% cost reduction)
 - [x] Retry logic with exponential backoff
 - [x] Respects retry-after headers
 
@@ -264,6 +266,7 @@ Available examples:
 - Tool result handling
 - Retry logic with exponential backoff
 - Comprehensive error handling
+- Prompt caching (90% cost reduction)
 
 **Phase 3 (Advanced Features) - In Progress 🚧**
 - Token counting
@@ -271,7 +274,7 @@ Available examples:
 - Interactive REPL
 - More examples and integration tests
 
-**Progress: 10 of 17 features complete (59%)**
+**Progress: 11 of 17 features complete (65%)**
 
 See [.claude/system/features.json](.claude/system/features.json) for detailed feature tracking.
 

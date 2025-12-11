@@ -113,14 +113,16 @@
       "id": "SDK013",
       "name": "Prompt caching support",
       "description": "Support API prompt caching via cache_control blocks. Reduces costs by caching system prompts, tool definitions, and long context. Add CacheControl type, support in Message content.",
-      "status": "new",
+      "status": "completed",
       "priority": 2,
       "dependencies": ["SDK002", "SDK006"],
       "notes": [
-        "API feature - cache_control blocks mark cacheable content",
-        "Supports ephemeral (5 min TTL) caching",
-        "Saves tokens/cost on repeated context (system prompt, tools)",
-        "Just need to add cache_control field to content blocks"
+        "CacheControl and CacheType enums implemented",
+        "cache_control fields in ContentBlock, SystemBlock, Tool",
+        "ConversationBuilder.with_cached_system() and with_cached_tool()",
+        "Usage tracking: cache_creation_input_tokens, cache_read_input_tokens",
+        "prompt_caching example demonstrates 90% cost reduction",
+        "7 new tests for caching serialization"
       ]
     },
     {

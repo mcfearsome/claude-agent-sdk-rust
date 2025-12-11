@@ -75,3 +75,11 @@
 [2025-12-11 00:00] PROGRESS: Added 9 new tests for retry logic (34 total unit tests now)
 [2025-12-11 00:00] PROGRESS: All tests passing - 34 unit tests + 17 doc tests
 [2025-12-11 00:00] MILESTONE: 10 of 17 features complete (59%) ✅
+[2025-12-11 00:00] PROGRESS: SDK013 COMPLETE - Prompt caching support
+[2025-12-11 00:00] PROGRESS: Verified cache_control fields in all types (ContentBlock, SystemBlock, Tool)
+[2025-12-11 00:00] PROGRESS: ConversationBuilder already has with_cached_system() and with_cached_tool()
+[2025-12-11 00:00] PROGRESS: Created prompt_caching example with cost comparison
+[2025-12-11 00:00] PROGRESS: Example demonstrates cache write → cache hit → 90% savings
+[2025-12-11 00:00] PROGRESS: Added 7 new caching tests (41 total unit tests)
+[2025-12-11 00:00] PROGRESS: Tests verify serialization and cache_control in all types
+[2025-12-11 00:00] MILESTONE: 11 of 17 features complete (65%) ✅

@@ -70,6 +70,10 @@ path = "examples/streaming_chat.rs"
 name = "tool_use"
 path = "examples/tool_use.rs"
 
+[[example]]
+name = "prompt_caching"
+path = "examples/prompt_caching.rs"
+
 [[bin]]
 name = "update-changelog"
 path = "src/bin/update-changelog.rs"

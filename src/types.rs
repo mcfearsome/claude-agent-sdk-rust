@@ -276,3 +276,98 @@ pub struct MessagesResponse {
 
     pub usage: Usage,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_cache_control_ephemeral() {
+        let cache = CacheControl::ephemeral();
+        assert_eq!(cache.cache_type, CacheType::Ephemeral);
+    }
+
+    #[test]
+    fn test_cache_control_serialization() {
+        let cache = CacheControl::ephemeral();
+        let json = serde_json::to_string(&cache).unwrap();
+        assert_eq!(json, r#"{"type":"ephemeral"}"#);
+    }
+
+    #[test]
+    fn test_text_content_with_cache() {
+        let content = ContentBlock::Text {
+            text: "test".into(),
+            cache_control: Some(CacheControl::ephemeral()),
+        };
+
+        let json = serde_json::to_value(&content).unwrap();
+        assert_eq!(json["type"], "text");
+        assert_eq!(json["text"], "test");
+        assert_eq!(json["cache_control"]["type"], "ephemeral");
+    }
+
+    #[test]
+    fn test_system_block_with_cache() {
+        let block = SystemBlock {
+            block_type: "text".into(),
+            text: "You are helpful".into(),
+            cache_control: Some(CacheControl::ephemeral()),
+        };
+
+        let json = serde_json::to_value(&block).unwrap();
+        assert_eq!(json["type"], "text");
+        assert_eq!(json["cache_control"]["type"], "ephemeral");
+    }
+
+    #[test]
+    fn test_tool_with_cache() {
+        let tool = Tool {
+            name: "test".into(),
+            description: "test tool".into(),
+            input_schema: serde_json::json!({"type": "object"}),
+            disable_user_input: Some(true),
+            cache_control: Some(CacheControl::ephemeral()),
+        };
+
+        let json = serde_json::to_value(&tool).unwrap();
+        assert_eq!(json["name"], "test");
+        assert_eq!(json["cache_control"]["type"], "ephemeral");
+    }
+
+    #[test]
+    fn test_message_constructors() {
+        let user_msg = Message::user("hello");
+        assert_eq!(user_msg.role, Role::User);
+        assert_eq!(user_msg.content.len(), 1);
+
+        let assistant_msg = Message::assistant("hi");
+        assert_eq!(assistant_msg.role, Role::Assistant);
+
+        let tool_result = Message::tool_result("id_123", "result");
+        assert_eq!(tool_result.role, Role::User);
+        match &tool_result.content[0] {
+            ContentBlock::ToolResult { tool_use_id, .. } => {
+                assert_eq!(tool_use_id, "id_123");
+            }
+            _ => panic!("Expected ToolResult"),
+        }
+    }
+
+    #[test]
+    fn test_messages_request_builder() {
+        let request = MessagesRequest::new(
+            "claude-sonnet-4-5-20250929",
+            1024,
+            vec![Message::user("test")],
+        )
+        .with_system("System prompt")
+        .with_temperature(0.7);
+
+        assert_eq!(request.model, "claude-sonnet-4-5-20250929");
+        assert_eq!(request.max_tokens, 1024);
+        assert_eq!(request.messages.len(), 1);
+        assert!(request.system.is_some());
+        assert_eq!(request.temperature, Some(0.7));
+    }
+}
