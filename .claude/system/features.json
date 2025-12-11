@@ -32,19 +32,19 @@
       "id": "SDK004",
       "name": "SSE streaming parser",
       "description": "Parse Server-Sent Events stream using eventsource-stream or custom parser. Handle all event types: message_start, content_block_start, content_block_delta, content_block_stop, message_delta, message_stop.",
-      "status": "new",
+      "status": "completed",
       "priority": 2,
       "dependencies": ["SDK001", "SDK002"],
-      "notes": []
+      "notes": ["Implemented with eventsource-stream, handles all event types, proper error handling"]
     },
     {
       "id": "SDK005",
       "name": "Streaming messages API",
       "description": "Implement send_streaming() returning impl Stream<Item = Result<StreamEvent>>. Use tokio streams for async iteration.",
-      "status": "new",
+      "status": "completed",
       "priority": 2,
       "dependencies": ["SDK004"],
-      "notes": []
+      "notes": ["Working send_streaming() with Pin<Box<dyn Stream>>, tested with streaming_chat example"]
     },
     {
       "id": "SDK006",
@@ -162,6 +162,21 @@
       "priority": 5,
       "dependencies": ["SDK011", "SDK014", "SDK015"],
       "notes": []
+    },
+    {
+      "id": "SDK017",
+      "name": "CI/CD Pipeline",
+      "description": "GitHub Actions workflows for testing, building, and publishing. Includes: cargo test, cargo clippy, cargo fmt check, automated crates.io publishing on release tags.",
+      "status": "completed",
+      "priority": 3,
+      "dependencies": ["SDK003", "SDK005"],
+      "notes": [
+        "Workflow 1: PR checks (test, clippy, fmt) - .github/workflows/ci.yml",
+        "Workflow 2: Release automation (publish to crates.io) - .github/workflows/release.yml",
+        "Workflow 3: Upstream SDK monitoring (weekly check for new models) - .github/workflows/upstream-check.yml",
+        "RELEASE.md documents complete release process with version bumping",
+        "CHANGELOG.md created following Keep a Changelog format"
+      ]
     }
   ]
 }

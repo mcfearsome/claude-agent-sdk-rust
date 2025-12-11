@@ -10,9 +10,7 @@ use serde::{Deserialize, Serialize};
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum StreamEvent {
     /// Stream started - provides message metadata
-    MessageStart {
-        message: MessageMetadata,
-    },
+    MessageStart { message: MessageMetadata },
 
     /// A content block has started
     ContentBlockStart {
@@ -21,21 +19,13 @@ pub enum StreamEvent {
     },
 
     /// Delta update to a content block
-    ContentBlockDelta {
-        index: usize,
-        delta: ContentDelta,
-    },
+    ContentBlockDelta { index: usize, delta: ContentDelta },
 
     /// A content block has finished
-    ContentBlockStop {
-        index: usize,
-    },
+    ContentBlockStop { index: usize },
 
     /// Delta update to the message (includes final usage)
-    MessageDelta {
-        delta: MessageDelta,
-        usage: Usage,
-    },
+    MessageDelta { delta: MessageDelta, usage: Usage },
 
     /// Stream has ended
     MessageStop,
@@ -44,9 +34,7 @@ pub enum StreamEvent {
     Ping,
 
     /// Error event
-    Error {
-        error: StreamError,
-    },
+    Error { error: StreamError },
 }
 
 /// Message metadata provided at stream start
@@ -78,14 +66,10 @@ pub struct MessageMetadata {
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum ContentDelta {
     /// Text delta
-    TextDelta {
-        text: String,
-    },
+    TextDelta { text: String },
 
     /// Input JSON delta for tool use
-    InputJsonDelta {
-        partial_json: String,
-    },
+    InputJsonDelta { partial_json: String },
 }
 
 impl ContentDelta {

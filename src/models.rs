@@ -476,10 +476,7 @@ pub fn get_model_by_bedrock_id(id: &str) -> Option<&'static Model> {
 
 /// Lookup a model by its Vertex AI ID
 pub fn get_model_by_vertex_id(id: &str) -> Option<&'static Model> {
-    ALL_MODELS
-        .iter()
-        .find(|m| m.vertex_id == Some(id))
-        .copied()
+    ALL_MODELS.iter().find(|m| m.vertex_id == Some(id)).copied()
 }
 
 /// Lookup a model by any ID (tries Anthropic, Bedrock, and Vertex)
@@ -504,7 +501,10 @@ mod tests {
             CLAUDE_SONNET_4_5.bedrock_global_id,
             Some("global.anthropic.claude-sonnet-4-5-20250929-v1:0")
         );
-        assert_eq!(CLAUDE_SONNET_4_5.max_context_tokens_extended, Some(1_000_000));
+        assert_eq!(
+            CLAUDE_SONNET_4_5.max_context_tokens_extended,
+            Some(1_000_000)
+        );
     }
 
     #[test]

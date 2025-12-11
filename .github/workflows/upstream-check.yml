@@ -1,0 +1,109 @@
+name: Check Upstream SDKs
+
+on:
+  schedule:
+    - cron: '0 0 * * 1'  # Weekly on Monday at midnight UTC
+  workflow_dispatch:      # Manual trigger
+
+jobs:
+  check-upstream:
+    name: Check for new Claude models
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch TypeScript SDK version
+        id: ts-sdk
+        run: |
+          TS_VERSION=$(npm view @anthropic-ai/sdk version)
+          echo "version=$TS_VERSION" >> $GITHUB_OUTPUT
+          echo "TypeScript SDK: $TS_VERSION"
+
+      - name: Fetch Python SDK version
+        id: py-sdk
+        run: |
+          pip install anthropic >/dev/null 2>&1
+          PY_VERSION=$(pip show anthropic | grep Version | cut -d' ' -f2)
+          echo "version=$PY_VERSION" >> $GITHUB_OUTPUT
+          echo "Python SDK: $PY_VERSION"
+
+      - name: Check Claude models documentation
+        id: docs
+        run: |
+          curl -s https://platform.claude.com/docs/en/about-claude/models > models-page.html
+          echo "Fetched models documentation"
+
+          # Extract model IDs (looking for claude-*-20* patterns)
+          grep -oP 'claude-[a-z0-9-]+-\d{8}' models-page.html | sort -u > current-models.txt
+          cat current-models.txt
+
+          echo "Found $(wc -l < current-models.txt) model versions"
+
+      - name: Compare with our models.rs
+        id: compare
+        run: |
+          # Extract model IDs from our source
+          grep -oP 'anthropic_id: "claude-[^"]+' src/models.rs | cut -d'"' -f2 | sort -u > our-models.txt
+
+          # Find differences
+          comm -13 our-models.txt current-models.txt > new-models.txt
+
+          if [ -s new-models.txt ]; then
+            echo "new_models=true" >> $GITHUB_OUTPUT
+            echo "New models detected:"
+            cat new-models.txt
+          else
+            echo "new_models=false" >> $GITHUB_OUTPUT
+            echo "No new models detected"
+          fi
+
+      - name: Create issue for new models
+        if: steps.compare.outputs.new_models == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const newModels = fs.readFileSync('new-models.txt', 'utf8').trim();
+            const tsVersion = '${{ steps.ts-sdk.outputs.version }}';
+            const pyVersion = '${{ steps.py-sdk.outputs.version }}';
+
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: '🆕 New Claude models detected',
+              labels: ['upstream-sync', 'models', 'needs-review'],
+              body: `## New Claude Models Detected
+
+### New Models
+\`\`\`
+${newModels}
+\`\`\`
+
+### Upstream Versions
+- TypeScript SDK: v${tsVersion}
+- Python SDK: v${pyVersion}
+
+### Action Required
+1. Review the [models documentation](https://platform.claude.com/docs/en/about-claude/models)
+2. Add model constants to \`src/models.rs\`
+3. Update model metadata (context windows, pricing, capabilities)
+4. Add tests for new models
+5. Update README and examples if needed
+
+### Files to Update
+- [ ] \`src/models.rs\` - Add new model constants
+- [ ] \`.claude/system/features.json\` - Track the update
+- [ ] \`.claude/system/history.txt\` - Log the changes
+- [ ] \`README.md\` - Update supported models list
+              `
+            });
+
+      - name: Check for upstream API changes
+        run: |
+          echo "Checking for API schema changes..."
+          curl -s https://platform.claude.com/docs/en/api/messages > api-docs.html
+
+          # Look for new fields or parameters (this is a simple check)
+          if grep -q "anthropic-beta" api-docs.html; then
+            echo "Beta features detected in documentation"
+          fi

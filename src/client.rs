@@ -3,9 +3,8 @@
 use crate::error::{ApiErrorResponse, Error, Result};
 use crate::streaming::StreamEvent;
 use crate::types::{MessagesRequest, MessagesResponse};
-use bytes::Bytes;
 use eventsource_stream::Eventsource;
-use futures::Stream;
+use futures::{Stream, StreamExt, TryStreamExt};
 use reqwest::{Client, StatusCode};
 use std::pin::Pin;
 use tracing::{debug, instrument};
@@ -227,52 +226,41 @@ impl ClaudeClient {
         let event_stream = byte_stream.eventsource();
 
         // Map SSE events to our StreamEvent type
-        let stream = futures::stream::try_unfold(event_stream, |mut es| async move {
-            use eventsource_stream::Event;
-            use futures::StreamExt;
+        let stream = event_stream.map(|result| {
+            let event = result.map_err(|e| Error::StreamParse(e.to_string()))?;
 
-            match es.next().await {
-                Some(Ok(Event::Open)) => {
-                    // Connection opened, continue to next event
-                    Ok(Some((None, es)))
-                }
-                Some(Ok(Event::Message(msg))) => {
-                    // Parse the event data
-                    let event = match msg.event.as_str() {
-                        "ping" => Some(StreamEvent::Ping),
-                        "error" => {
-                            let error: crate::streaming::StreamError =
-                                serde_json::from_str(&msg.data)
-                                    .map_err(|e| Error::StreamParse(e.to_string()))?;
-                            Some(StreamEvent::Error { error })
-                        }
-                        _ => {
-                            // All other events follow the standard format
-                            serde_json::from_str::<StreamEvent>(&msg.data)
-                                .map_err(|e| Error::StreamParse(format!("Failed to parse event {}: {}", msg.event, e)))?
-                                .into()
-                        }
-                    };
-
-                    Ok(Some((event, es)))
-                }
-                Some(Err(e)) => Err(Error::StreamParse(e.to_string())),
-                None => Ok(None), // Stream ended
+            // Skip empty data
+            if event.data.is_empty() {
+                return Ok(None);
             }
+
+            // Parse based on event type
+            let stream_event = match event.event.as_str() {
+                "ping" => Some(StreamEvent::Ping),
+                "error" => {
+                    let error: crate::streaming::StreamError = serde_json::from_str(&event.data)
+                        .map_err(|e| Error::StreamParse(e.to_string()))?;
+                    Some(StreamEvent::Error { error })
+                }
+                _ => {
+                    // All other events (message_start, content_block_start, etc.)
+                    // follow the standard format with type field
+                    Some(
+                        serde_json::from_str::<StreamEvent>(&event.data).map_err(|e| {
+                            Error::StreamParse(format!(
+                                "Failed to parse event '{}': {}",
+                                event.event, e
+                            ))
+                        })?,
+                    )
+                }
+            };
+
+            Ok(stream_event)
         });
 
-        // Filter out None values and flatten the stream
-        let filtered_stream = futures::stream::try_unfold(stream, |mut s| async move {
-            use futures::StreamExt;
-
-            loop {
-                match s.try_next().await? {
-                    Some(Some(event)) => return Ok(Some((event, s))),
-                    Some(None) => continue, // Skip None events
-                    None => return Ok(None), // Stream ended
-                }
-            }
-        });
+        // Filter out None values
+        let filtered_stream = stream.try_filter_map(|opt| async move { Ok(opt) });
 
         Ok(Box::pin(filtered_stream))
     }

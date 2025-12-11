@@ -46,11 +46,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("📝 Response:");
     println!("─────────────────────────────────────");
     for content in &response.content {
-        match content {
-            claude_sdk::ContentBlock::Text { text, .. } => {
-                println!("{}", text);
-            }
-            _ => {}
+        if let claude_sdk::ContentBlock::Text { text, .. } = content {
+            println!("{}", text);
         }
     }
     println!("─────────────────────────────────────\n");
@@ -59,7 +56,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("📊 Token Usage:");
     println!("  Input tokens:  {}", response.usage.input_tokens);
     println!("  Output tokens: {}", response.usage.output_tokens);
-    println!("  Total tokens:  {}", response.usage.input_tokens + response.usage.output_tokens);
+    println!(
+        "  Total tokens:  {}",
+        response.usage.input_tokens + response.usage.output_tokens
+    );
 
     if let Some(stop_reason) = response.stop_reason {
         println!("  Stop reason:   {:?}", stop_reason);
