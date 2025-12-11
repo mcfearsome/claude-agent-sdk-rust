@@ -114,6 +114,15 @@ impl TokenCounter {
                 }
                 total
             }
+            ContentBlock::Thinking { thinking, .. } => {
+                // Thinking blocks are removed from prior turns, so don't count in context
+                // But we estimate tokens for completeness
+                self.count_text(thinking)
+            }
+            ContentBlock::RedactedThinking { .. } => {
+                // Redacted thinking is encrypted, estimate similar to regular thinking
+                100 // Rough estimate for encrypted overhead
+            }
         }
     }
 

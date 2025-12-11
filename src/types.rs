@@ -56,6 +56,20 @@ pub enum ContentBlock {
         #[serde(skip_serializing_if = "Option::is_none")]
         is_error: Option<bool>,
     },
+    /// Thinking block from extended thinking
+    ///
+    /// Contains Claude's step-by-step reasoning process.
+    /// Appears when extended thinking is enabled.
+    Thinking {
+        thinking: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        signature: Option<String>,
+    },
+    /// Redacted thinking block
+    ///
+    /// Contains encrypted thinking that was flagged by safety systems.
+    /// Must be passed back unmodified in multi-turn conversations.
+    RedactedThinking { data: String },
 }
 
 /// Image source for vision
@@ -244,6 +258,20 @@ pub struct Usage {
     pub cache_read_input_tokens: Option<u32>,
 }
 
+/// Extended usage information for responses with thinking
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct ExtendedUsage {
+    #[serde(flatten)]
+    pub base: Usage,
+
+    /// Tokens used for thinking (extended thinking)
+    ///
+    /// Note: With summarized thinking (Claude 4+), you're billed for the full
+    /// thinking tokens, not the summarized tokens you see in the response.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub thinking_tokens: Option<u32>,
+}
+
 /// Request to create a message
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MessagesRequest {
@@ -307,6 +335,29 @@ pub struct MessagesRequest {
     /// Requires beta header for effort: `anthropic-beta: effort-2025-11-24`
     #[serde(skip_serializing_if = "Option::is_none")]
     pub output_config: Option<OutputConfig>,
+
+    /// Extended thinking configuration
+    ///
+    /// Enables Claude's step-by-step reasoning process.
+    /// Supported models: Sonnet 4.5, Haiku 4.5, Opus 4.5, and more.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub thinking: Option<ThinkingConfig>,
+}
+
+/// Extended thinking configuration
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(tag = "type", rename_all = "lowercase")]
+pub enum ThinkingConfig {
+    /// Enable extended thinking with token budget
+    Enabled {
+        /// Maximum tokens Claude can use for thinking
+        ///
+        /// Minimum: 1024 tokens
+        /// Can exceed max_tokens with interleaved thinking (beta: interleaved-thinking-2025-05-14)
+        budget_tokens: u32,
+    },
+    /// Disable extended thinking
+    Disabled,
 }
 
 /// Output configuration for controlling response behavior
@@ -365,6 +416,7 @@ impl MessagesRequest {
             stop_sequences: None,
             stream: None,
             output_config: None,
+            thinking: None,
         }
     }
 
@@ -405,6 +457,15 @@ impl MessagesRequest {
         self.output_config = Some(OutputConfig {
             effort: Some(effort),
         });
+        self
+    }
+
+    /// Enable extended thinking with a token budget
+    ///
+    /// Supported by: Sonnet 4.5, Haiku 4.5, Opus 4.5, and other Claude 4+ models
+    /// Minimum budget: 1024 tokens
+    pub fn with_thinking(mut self, budget_tokens: u32) -> Self {
+        self.thinking = Some(ThinkingConfig::Enabled { budget_tokens });
         self
     }
 }

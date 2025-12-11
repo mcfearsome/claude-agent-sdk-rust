@@ -70,6 +70,12 @@ pub enum ContentDelta {
 
     /// Input JSON delta for tool use
     InputJsonDelta { partial_json: String },
+
+    /// Thinking delta (extended thinking)
+    ThinkingDelta { thinking: String },
+
+    /// Signature delta for thinking blocks
+    SignatureDelta { signature: String },
 }
 
 impl ContentDelta {
@@ -85,6 +91,22 @@ impl ContentDelta {
     pub fn partial_json(&self) -> Option<&str> {
         match self {
             ContentDelta::InputJsonDelta { partial_json } => Some(partial_json),
+            _ => None,
+        }
+    }
+
+    /// Extract thinking if this is a thinking delta
+    pub fn thinking(&self) -> Option<&str> {
+        match self {
+            ContentDelta::ThinkingDelta { thinking } => Some(thinking),
+            _ => None,
+        }
+    }
+
+    /// Extract signature if this is a signature delta
+    pub fn signature(&self) -> Option<&str> {
+        match self {
+            ContentDelta::SignatureDelta { signature } => Some(signature),
             _ => None,
         }
     }

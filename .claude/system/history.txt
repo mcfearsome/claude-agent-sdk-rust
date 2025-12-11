@@ -96,3 +96,15 @@
 [2025-12-11 00:00] PROGRESS: ConversationBuilder.estimate_tokens() and fits_in_context()
 [2025-12-11 00:00] PROGRESS: 7 new token counting tests (50 total unit tests + 27 doc tests)
 [2025-12-11 00:00] MILESTONE: 14 of 17 features complete (82%) ✅
+[2025-12-11 00:00] PROGRESS: SDK015 COMPLETE - Interactive REPL with streaming
+[2025-12-11 00:00] PROGRESS: 440+ line REPL with rustyline, slash commands, token display
+[2025-12-11 00:00] PROGRESS: Runtime backend/model switching, save/load conversations
+[2025-12-11 00:00] MILESTONE: 15 of 17 core features complete (88%) ✅
+[2025-12-11 00:00] PROGRESS: SDK019 COMPLETE - Vision support with Image content blocks
+[2025-12-11 00:00] PROGRESS: ImageSource enum: Base64, Url, File (file_id)
+[2025-12-11 00:00] PROGRESS: SDK026 COMPLETE - Files API client
+[2025-12-11 00:00] PROGRESS: FilesClient: upload, list, get_metadata, delete, download
+[2025-12-11 00:00] PROGRESS: SDK031 COMPLETE - Document content blocks
+[2025-12-11 00:00] PROGRESS: DocumentSource enum, CitationConfig for PDFs/text
+[2025-12-11 00:00] PROGRESS: Updated token counter for Image/Document types
+[2025-12-11 00:00] MILESTONE: 18 of 20 total features complete (90%) ✅
