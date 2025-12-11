@@ -1,18 +1,2 @@
-### Added
-- Core Claude API client with support for all Claude models (4.5, 4.x, and 3.x families)
-- Streaming support via Server-Sent Events (SSE) for real-time message responses
-- Non-streaming message API for synchronous interactions
-- Comprehensive model registry with metadata including context windows, pricing, and capabilities
-- Support for extended context up to 1M tokens for Sonnet models
-- AWS Bedrock regional endpoints support (standard, global, US, EU, and AP regions)
-- Robust error handling with automatic retry-after parsing for rate limits
-- Complete authentication system for API requests
-- Two example implementations:
-  - Simple chat for basic non-streaming usage
-  - Streaming chat with real-time token statistics
-- Developer tooling:
-  - Pre-commit git hooks for testing, linting, formatting, and documentation checks
-  - Automated changelog generator
-  - GitHub Actions CI/CD pipeline with testing, releases, and monitoring
-- Comprehensive documentation including README, contributing guidelines, and release processes
-- 18 unit tests and 8 documentation tests with full coverage
+### Fixed
+- Fix release automation workflow that was failing due to deprecated GitHub action, ensuring releases are published successfully with improved formatting and automatic release notes generation
