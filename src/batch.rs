@@ -1,16 +1,25 @@
-//! Message Batches API for async bulk processing
+//! Message Batches API for async bulk processing.
 //!
 //! Process large volumes of Messages requests asynchronously with 50% cost reduction.
+//! Ideal for bulk content generation, data processing, and offline workloads.
 //!
-//! # Features
+//! # Key Benefits
 //!
-//! - Submit up to 100,000 requests per batch
-//! - 50% discount on all token usage
-//! - Process requests concurrently
-//! - Results available within ~1 hour (up to 24 hours)
-//! - Stream results efficiently
+//! | Feature | Description |
+//! |---------|-------------|
+//! | **50% Cost Savings** | All batch requests are billed at half price |
+//! | **High Volume** | Up to 100,000 requests per batch |
+//! | **Large Batches** | Up to 256 MB total request size |
+//! | **Long Results** | Results available for 29 days |
+//! | **Concurrent Processing** | Requests processed in parallel |
 //!
-//! # Example
+//! # Typical Workflow
+//!
+//! 1. Create a batch with [`BatchClient::create`]
+//! 2. Monitor progress with [`BatchClient::retrieve`] or [`BatchClient::wait_for_completion`]
+//! 3. Fetch results with [`BatchClient::results`]
+//!
+//! # Quick Example
 //!
 //! ```rust,no_run
 //! use claude_sdk::batch::{BatchClient, BatchRequest};
@@ -20,29 +29,145 @@
 //! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
 //! let client = BatchClient::new("your-api-key");
 //!
-//! // Create batch
+//! // Create batch with multiple requests
 //! let requests = vec![
 //!     BatchRequest {
-//!         custom_id: "req-1".into(),
+//!         custom_id: "summarize-doc-1".into(),
 //!         params: MessagesRequest::new(
 //!             "claude-sonnet-4-5-20250929",
 //!             1024,
-//!             vec![Message::user("Hello!")],
+//!             vec![Message::user("Summarize: [document 1 text]")],
+//!         ),
+//!     },
+//!     BatchRequest {
+//!         custom_id: "summarize-doc-2".into(),
+//!         params: MessagesRequest::new(
+//!             "claude-sonnet-4-5-20250929",
+//!             1024,
+//!             vec![Message::user("Summarize: [document 2 text]")],
 //!         ),
 //!     },
 //! ];
 //!
+//! // Submit batch
 //! let batch = client.create(requests).await?;
-//! println!("Batch ID: {}", batch.id);
+//! println!("Batch {} created", batch.id);
 //!
-//! // Poll until complete
+//! // Wait for completion (polls every 60s)
 //! let completed = client.wait_for_completion(&batch.id).await?;
+//! println!("Done! {} succeeded, {} failed",
+//!     completed.request_counts.succeeded,
+//!     completed.request_counts.errored);
 //!
 //! // Stream results
 //! let mut results = client.results(&batch.id).await?;
 //! while let Some(result) = results.next().await {
-//!     println!("Result: {:?}", result?);
+//!     let result = result?;
+//!     println!("Result for {}: {:?}", result.custom_id, result.result);
 //! }
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! # Processing Large Datasets
+//!
+//! For large datasets, create batches in chunks and process results as they complete:
+//!
+//! ```rust,no_run
+//! use claude_sdk::batch::{BatchClient, BatchRequest, BatchResultType};
+//! use claude_sdk::{MessagesRequest, Message};
+//! use futures::StreamExt;
+//!
+//! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+//! let client = BatchClient::new("your-api-key");
+//!
+//! // Example: Process 1000 items in batches of 100
+//! let items: Vec<String> = (0..1000).map(|i| format!("Item {}", i)).collect();
+//!
+//! for (batch_num, chunk) in items.chunks(100).enumerate() {
+//!     let requests: Vec<BatchRequest> = chunk
+//!         .iter()
+//!         .enumerate()
+//!         .map(|(i, item)| BatchRequest {
+//!             custom_id: format!("batch-{}-item-{}", batch_num, i),
+//!             params: MessagesRequest::new(
+//!                 "claude-sonnet-4-5-20250929",
+//!                 256,
+//!                 vec![Message::user(format!("Process: {}", item))],
+//!             ),
+//!         })
+//!         .collect();
+//!
+//!     let batch = client.create(requests).await?;
+//!     println!("Batch {} submitted: {}", batch_num, batch.id);
+//! }
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! # Handling Results
+//!
+//! Each result can be one of several types:
+//!
+//! ```rust,no_run
+//! use claude_sdk::batch::{BatchClient, BatchResultType};
+//! use futures::StreamExt;
+//!
+//! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+//! let client = BatchClient::new("your-api-key");
+//! let mut results = client.results("msgbatch_123").await?;
+//!
+//! while let Some(result) = results.next().await {
+//!     let result = result?;
+//!     match result.result {
+//!         BatchResultType::Succeeded { message } => {
+//!             println!("{}: Success - {} tokens used",
+//!                 result.custom_id,
+//!                 message.usage.output_tokens);
+//!         }
+//!         BatchResultType::Errored { error } => {
+//!             println!("{}: Error - {}", result.custom_id, error.message);
+//!         }
+//!         BatchResultType::Canceled => {
+//!             println!("{}: Canceled", result.custom_id);
+//!         }
+//!         BatchResultType::Expired => {
+//!             println!("{}: Expired", result.custom_id);
+//!         }
+//!     }
+//! }
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! # Batch Lifecycle
+//!
+//! ```text
+//! ┌──────────┐     ┌─────────────┐     ┌───────┐
+//! │  create  │────▶│ in_progress │────▶│ ended │
+//! └──────────┘     └─────────────┘     └───────┘
+//!                        │
+//!                        ▼
+//!                  ┌───────────┐
+//!                  │ canceling │────▶ ended
+//!                  └───────────┘
+//! ```
+//!
+//! # Cancellation
+//!
+//! Cancel a batch to stop processing remaining requests:
+//!
+//! ```rust,no_run
+//! use claude_sdk::batch::BatchClient;
+//!
+//! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+//! let client = BatchClient::new("your-api-key");
+//!
+//! // Cancel a running batch
+//! let batch = client.cancel("msgbatch_123").await?;
+//! println!("Batch canceled. Completed: {}, Canceled: {}",
+//!     batch.request_counts.succeeded,
+//!     batch.request_counts.canceled);
 //! # Ok(())
 //! # }
 //! ```
