@@ -1,4 +1,29 @@
-//! Type definitions for Claude API requests and responses
+//! Type definitions for Claude API requests and responses.
+//!
+//! This module contains all the core types used for communicating with the Claude API:
+//!
+//! - [`MessagesRequest`] - The main request type for sending messages
+//! - [`MessagesResponse`] - Response from the Messages API
+//! - [`Message`] - Conversation messages with user/assistant roles
+//! - [`ContentBlock`] - Text, images, documents, tool calls, and more
+//! - [`Tool`] - Tool definitions for function calling
+//! - [`ToolChoice`] - Control how Claude uses tools
+//!
+//! # Example
+//!
+//! ```rust
+//! use claude_sdk::types::{MessagesRequest, Message, Tool, ToolChoice};
+//! use serde_json::json;
+//!
+//! // Create a basic request
+//! let request = MessagesRequest::new(
+//!     "claude-sonnet-4-5-20250929",
+//!     1024,
+//!     vec![Message::user("Hello!")],
+//! )
+//! .with_system("You are a helpful assistant.")
+//! .with_temperature(0.7);
+//! ```
 
 use serde::{Deserialize, Serialize};
 
@@ -467,39 +492,174 @@ impl MessagesRequest {
         }
     }
 
-    /// Set the system prompt
+    /// Set the system prompt.
+    ///
+    /// The system prompt provides instructions and context that guide Claude's behavior.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use claude_sdk::{MessagesRequest, Message};
+    ///
+    /// let request = MessagesRequest::new(
+    ///     "claude-sonnet-4-5-20250929",
+    ///     1024,
+    ///     vec![Message::user("What's 2+2?")],
+    /// )
+    /// .with_system("You are a math tutor. Always explain your reasoning step by step.");
+    /// ```
     pub fn with_system(mut self, system: impl Into<String>) -> Self {
         self.system = Some(SystemPrompt::String(system.into()));
         self
     }
 
-    /// Set the tools
+    /// Set the available tools for this request.
+    ///
+    /// Tools allow Claude to call functions and return structured data.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use claude_sdk::{MessagesRequest, Message, Tool};
+    /// use serde_json::json;
+    ///
+    /// let calculator = Tool {
+    ///     name: "calculator".into(),
+    ///     description: "Perform basic arithmetic operations".into(),
+    ///     input_schema: json!({
+    ///         "type": "object",
+    ///         "properties": {
+    ///             "operation": { "type": "string", "enum": ["add", "subtract", "multiply", "divide"] },
+    ///             "a": { "type": "number" },
+    ///             "b": { "type": "number" }
+    ///         },
+    ///         "required": ["operation", "a", "b"]
+    ///     }),
+    ///     disable_user_input: Some(true),
+    ///     input_examples: None,
+    ///     cache_control: None,
+    /// };
+    ///
+    /// let request = MessagesRequest::new(
+    ///     "claude-sonnet-4-5-20250929",
+    ///     1024,
+    ///     vec![Message::user("What's 15 * 7?")],
+    /// )
+    /// .with_tools(vec![calculator]);
+    /// ```
     pub fn with_tools(mut self, tools: Vec<Tool>) -> Self {
         self.tools = Some(tools);
         self
     }
 
-    /// Set tool choice configuration
+    /// Set tool choice configuration.
+    ///
+    /// Controls how Claude decides whether and which tools to use.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use claude_sdk::{MessagesRequest, Message, ToolChoice};
+    ///
+    /// // Force Claude to use a specific tool
+    /// let request = MessagesRequest::new(
+    ///     "claude-sonnet-4-5-20250929",
+    ///     1024,
+    ///     vec![Message::user("Search for weather")],
+    /// )
+    /// .with_tool_choice(ToolChoice::tool("get_weather"));
+    ///
+    /// // Or let Claude decide (default)
+    /// let request2 = MessagesRequest::new(
+    ///     "claude-sonnet-4-5-20250929",
+    ///     1024,
+    ///     vec![Message::user("Hello")],
+    /// )
+    /// .with_tool_choice(ToolChoice::auto());
+    /// ```
     pub fn with_tool_choice(mut self, choice: ToolChoice) -> Self {
         self.tool_choice = Some(choice);
         self
     }
 
-    /// Disable parallel tool use
+    /// Disable parallel tool use.
+    ///
+    /// When enabled, Claude will only use one tool at a time instead of
+    /// potentially calling multiple tools in parallel.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use claude_sdk::{MessagesRequest, Message};
+    ///
+    /// let request = MessagesRequest::new(
+    ///     "claude-sonnet-4-5-20250929",
+    ///     1024,
+    ///     vec![Message::user("Get weather and stock price")],
+    /// )
+    /// .with_disable_parallel_tool_use(true);  // Forces sequential tool calls
+    /// ```
     pub fn with_disable_parallel_tool_use(mut self, disable: bool) -> Self {
         self.disable_parallel_tool_use = Some(disable);
         self
     }
 
-    /// Set the temperature
+    /// Set the sampling temperature.
+    ///
+    /// Temperature controls randomness in the output:
+    /// - `0.0` - Deterministic, most likely tokens
+    /// - `0.5` - Balanced creativity
+    /// - `1.0` - Maximum randomness
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use claude_sdk::{MessagesRequest, Message};
+    ///
+    /// // Low temperature for factual responses
+    /// let factual = MessagesRequest::new(
+    ///     "claude-sonnet-4-5-20250929",
+    ///     1024,
+    ///     vec![Message::user("What is the capital of France?")],
+    /// )
+    /// .with_temperature(0.0);
+    ///
+    /// // Higher temperature for creative writing
+    /// let creative = MessagesRequest::new(
+    ///     "claude-sonnet-4-5-20250929",
+    ///     1024,
+    ///     vec![Message::user("Write a short poem about the ocean.")],
+    /// )
+    /// .with_temperature(0.8);
+    /// ```
     pub fn with_temperature(mut self, temperature: f32) -> Self {
         self.temperature = Some(temperature);
         self
     }
 
-    /// Set effort level (beta - requires effort-2025-11-24 header)
+    /// Set effort level (beta - requires `anthropic-beta: effort-2025-11-24` header).
     ///
-    /// Only supported by Claude Opus 4.5
+    /// Controls the trade-off between response quality and token usage.
+    /// Only supported by Claude Opus 4.5.
+    ///
+    /// # Effort Levels
+    ///
+    /// - [`EffortLevel::High`] - Maximum capability (default)
+    /// - [`EffortLevel::Medium`] - Balanced token savings
+    /// - [`EffortLevel::Low`] - Maximum efficiency
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use claude_sdk::{MessagesRequest, Message, EffortLevel};
+    ///
+    /// let request = MessagesRequest::new(
+    ///     "claude-opus-4-5-20251101",  // Opus 4.5 only
+    ///     1024,
+    ///     vec![Message::user("Summarize this document briefly.")],
+    /// )
+    /// .with_effort(EffortLevel::Low);  // Optimize for efficiency
+    /// ```
     pub fn with_effort(mut self, effort: EffortLevel) -> Self {
         self.output_config = Some(OutputConfig {
             effort: Some(effort),
@@ -507,10 +667,29 @@ impl MessagesRequest {
         self
     }
 
-    /// Enable extended thinking with a token budget
+    /// Enable extended thinking with a token budget.
     ///
-    /// Supported by: Sonnet 4.5, Haiku 4.5, Opus 4.5, and other Claude 4+ models
-    /// Minimum budget: 1024 tokens
+    /// Extended thinking allows Claude to reason through complex problems
+    /// step-by-step before providing a final answer.
+    ///
+    /// # Requirements
+    ///
+    /// - Supported by: Claude Sonnet 4.5, Haiku 4.5, Opus 4.5, and other Claude 4+ models
+    /// - Minimum budget: 1024 tokens
+    /// - The thinking process appears in [`ContentBlock::Thinking`] blocks
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use claude_sdk::{MessagesRequest, Message};
+    ///
+    /// let request = MessagesRequest::new(
+    ///     "claude-sonnet-4-5-20250929",
+    ///     8192,
+    ///     vec![Message::user("Solve this step by step: If a train travels...")],
+    /// )
+    /// .with_thinking(4096);  // Allow up to 4096 tokens for reasoning
+    /// ```
     pub fn with_thinking(mut self, budget_tokens: u32) -> Self {
         self.thinking = Some(ThinkingConfig::Enabled { budget_tokens });
         self

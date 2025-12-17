@@ -1,16 +1,74 @@
-//! Model identifiers and metadata for Claude models
+//! Model identifiers and metadata for Claude models.
 //!
 //! This module provides constants and metadata for all available Claude models,
 //! including constraints like context windows, output limits, and capabilities.
 //!
-//! # Example
+//! # Available Models
+//!
+//! ## Latest (Claude 4.5)
+//!
+//! | Model | Best For | Max Output | Extended Thinking |
+//! |-------|----------|------------|-------------------|
+//! | [`CLAUDE_SONNET_4_5`] | Complex agents, coding | 64K | Yes |
+//! | [`CLAUDE_HAIKU_4_5`] | Speed, near-frontier intelligence | 64K | Yes |
+//! | [`CLAUDE_OPUS_4_5`] | Maximum intelligence | 64K | Yes |
+//!
+//! ## Legacy (Claude 4.x and 3.x)
+//!
+//! | Model | Best For | Max Output |
+//! |-------|----------|------------|
+//! | [`CLAUDE_OPUS_4_1`] | Previous generation powerful | 32K |
+//! | [`CLAUDE_SONNET_4`] | Balanced performance | 64K |
+//! | [`CLAUDE_OPUS_4`] | Claude 4 powerful | 32K |
+//! | [`CLAUDE_HAIKU_3_5`] | Fast and efficient | 8K |
+//! | [`CLAUDE_HAIKU_3`] | Original fast model | 4K |
+//!
+//! # Usage Examples
+//!
+//! ## Basic Model Selection
 //!
 //! ```rust
-//! use claude_sdk::models;
+//! use claude_sdk::models::{CLAUDE_SONNET_4_5, CLAUDE_OPUS_4_5};
 //!
-//! let model = models::CLAUDE_SONNET_4_5;
-//! println!("Using {} ({})", model.name, model.anthropic_id);
+//! let model = CLAUDE_SONNET_4_5;
+//! println!("Model: {} ({})", model.name, model.anthropic_id);
 //! println!("Max output: {} tokens", model.max_output_tokens);
+//! println!("Supports vision: {}", model.supports_vision);
+//! println!("Supports thinking: {}", model.supports_extended_thinking);
+//! ```
+//!
+//! ## Model Lookup
+//!
+//! ```rust
+//! use claude_sdk::models::{get_model, get_model_by_anthropic_id};
+//!
+//! // Lookup by any ID format
+//! let model = get_model("claude-sonnet-4-5-20250929").unwrap();
+//! assert_eq!(model.name, "Claude Sonnet 4.5");
+//!
+//! // Lookup by Anthropic ID specifically
+//! let model = get_model_by_anthropic_id("claude-sonnet-4-5-20250929").unwrap();
+//! ```
+//!
+//! ## Cost Estimation
+//!
+//! ```rust
+//! use claude_sdk::models::CLAUDE_SONNET_4_5;
+//!
+//! // Estimate cost for 10K input + 2K output tokens
+//! let cost = CLAUDE_SONNET_4_5.estimate_cost(10_000, 2_000);
+//! println!("Estimated cost: ${:.4}", cost);  // ~$0.06
+//! ```
+//!
+//! ## AWS Bedrock Regions
+//!
+//! ```rust
+//! use claude_sdk::models::{CLAUDE_SONNET_4_5, BedrockRegion};
+//!
+//! // Get model ID for different Bedrock endpoints
+//! let standard = CLAUDE_SONNET_4_5.bedrock_id_for_region(BedrockRegion::Standard);
+//! let global = CLAUDE_SONNET_4_5.bedrock_id_for_region(BedrockRegion::Global);
+//! let us = CLAUDE_SONNET_4_5.bedrock_id_for_region(BedrockRegion::US);
 //! ```
 
 /// Model capabilities and constraints
@@ -81,18 +139,65 @@ pub struct Model {
     pub description: &'static str,
 }
 
-/// AWS Bedrock endpoint region
+/// AWS Bedrock endpoint region configuration.
+///
+/// Bedrock supports different endpoint types for accessing Claude models.
+/// Use this enum to generate the appropriate model ID for your endpoint.
+///
+/// # Example
+///
+/// ```rust
+/// use claude_sdk::models::{CLAUDE_SONNET_4_5, BedrockRegion};
+///
+/// // Standard regional endpoint (most common)
+/// let model_id = CLAUDE_SONNET_4_5.bedrock_id_for_region(BedrockRegion::Standard);
+/// // → "anthropic.claude-sonnet-4-5-20250929-v1:0"
+///
+/// // Global endpoint for better availability
+/// let model_id = CLAUDE_SONNET_4_5.bedrock_id_for_region(BedrockRegion::Global);
+/// // → "global.anthropic.claude-sonnet-4-5-20250929-v1:0"
+/// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BedrockRegion {
-    /// Standard regional endpoint (tied to specific AWS region)
+    /// Standard regional endpoint.
+    ///
+    /// The default endpoint type, tied to your specific AWS region.
+    /// Use this when you want predictable latency and data residency.
+    ///
+    /// Model ID format: `anthropic.claude-{model}-v1:0`
     Standard,
-    /// Global endpoint (dynamic routing for maximum availability)
+
+    /// Global endpoint with dynamic routing.
+    ///
+    /// Automatically routes requests to the best available region for
+    /// maximum availability and reduced latency. Only available for
+    /// Claude 4.5+ models.
+    ///
+    /// Model ID format: `global.anthropic.claude-{model}-v1:0`
     Global,
-    /// US-specific regional endpoint
+
+    /// US regional endpoint.
+    ///
+    /// Routes requests within the United States for data residency
+    /// compliance while still allowing some routing flexibility.
+    ///
+    /// Model ID format: `us.anthropic.claude-{model}-v1:0`
     US,
-    /// EU-specific regional endpoint
+
+    /// EU regional endpoint.
+    ///
+    /// Routes requests within the European Union for GDPR compliance
+    /// and EU data residency requirements.
+    ///
+    /// Model ID format: `eu.anthropic.claude-{model}-v1:0`
     EU,
-    /// Asia-Pacific-specific regional endpoint
+
+    /// Asia-Pacific regional endpoint.
+    ///
+    /// Routes requests within the Asia-Pacific region for reduced
+    /// latency in APAC deployments.
+    ///
+    /// Model ID format: `ap.anthropic.claude-{model}-v1:0`
     AsiaPacific,
 }
 
@@ -454,19 +559,53 @@ pub const ALL_MODELS: &[&Model] = &[
     &CLAUDE_HAIKU_3,
 ];
 
-/// Lookup a model by its Anthropic API ID
+/// Lookup a model by its Anthropic API ID.
+///
+/// Returns the model metadata if found, or `None` if the ID doesn't match any model.
+///
+/// # Example
+///
+/// ```rust
+/// use claude_sdk::models::get_model_by_anthropic_id;
+///
+/// let model = get_model_by_anthropic_id("claude-sonnet-4-5-20250929").unwrap();
+/// assert_eq!(model.name, "Claude Sonnet 4.5");
+/// assert_eq!(model.max_output_tokens, 64_000);
+///
+/// // Unknown models return None
+/// assert!(get_model_by_anthropic_id("unknown-model").is_none());
+/// ```
 pub fn get_model_by_anthropic_id(id: &str) -> Option<&'static Model> {
     ALL_MODELS.iter().find(|m| m.anthropic_id == id).copied()
 }
 
-/// Lookup a model by its Bedrock ID (any region prefix)
+/// Lookup a model by its Bedrock ID (any region prefix).
 ///
-/// Supports all Bedrock endpoint types:
+/// This function is flexible and accepts model IDs from any Bedrock endpoint type.
+/// It will automatically strip regional prefixes when matching.
+///
+/// # Supported Formats
+///
 /// - Standard regional: `anthropic.claude-sonnet-4-5-20250929-v1:0`
 /// - Global: `global.anthropic.claude-sonnet-4-5-20250929-v1:0`
 /// - US regional: `us.anthropic.claude-sonnet-4-5-20250929-v1:0`
 /// - EU regional: `eu.anthropic.claude-sonnet-4-5-20250929-v1:0`
 /// - AP regional: `ap.anthropic.claude-sonnet-4-5-20250929-v1:0`
+///
+/// # Example
+///
+/// ```rust
+/// use claude_sdk::models::get_model_by_bedrock_id;
+///
+/// // All of these return the same model
+/// let m1 = get_model_by_bedrock_id("anthropic.claude-sonnet-4-5-20250929-v1:0");
+/// let m2 = get_model_by_bedrock_id("global.anthropic.claude-sonnet-4-5-20250929-v1:0");
+/// let m3 = get_model_by_bedrock_id("us.anthropic.claude-sonnet-4-5-20250929-v1:0");
+///
+/// assert_eq!(m1.unwrap().name, "Claude Sonnet 4.5");
+/// assert_eq!(m2.unwrap().name, "Claude Sonnet 4.5");
+/// assert_eq!(m3.unwrap().name, "Claude Sonnet 4.5");
+/// ```
 pub fn get_model_by_bedrock_id(id: &str) -> Option<&'static Model> {
     // Try exact match first
     if let Some(model) = ALL_MODELS
@@ -490,12 +629,53 @@ pub fn get_model_by_bedrock_id(id: &str) -> Option<&'static Model> {
         .copied()
 }
 
-/// Lookup a model by its Vertex AI ID
+/// Lookup a model by its Google Vertex AI ID.
+///
+/// # Example
+///
+/// ```rust
+/// use claude_sdk::models::get_model_by_vertex_id;
+///
+/// let model = get_model_by_vertex_id("claude-sonnet-4-5@20250929").unwrap();
+/// assert_eq!(model.name, "Claude Sonnet 4.5");
+///
+/// // Unknown models return None
+/// assert!(get_model_by_vertex_id("unknown-model").is_none());
+/// ```
 pub fn get_model_by_vertex_id(id: &str) -> Option<&'static Model> {
     ALL_MODELS.iter().find(|m| m.vertex_id == Some(id)).copied()
 }
 
-/// Lookup a model by any ID (tries Anthropic, Bedrock, and Vertex)
+/// Lookup a model by any ID format.
+///
+/// This is the most flexible lookup function. It tries to match the ID against:
+/// 1. Anthropic API IDs (e.g., `claude-sonnet-4-5-20250929`)
+/// 2. AWS Bedrock IDs (e.g., `anthropic.claude-sonnet-4-5-20250929-v1:0`)
+/// 3. Google Vertex AI IDs (e.g., `claude-sonnet-4-5@20250929`)
+///
+/// Use this when you need to accept model IDs from different sources.
+///
+/// # Example
+///
+/// ```rust
+/// use claude_sdk::models::get_model;
+///
+/// // Anthropic ID
+/// let m1 = get_model("claude-sonnet-4-5-20250929").unwrap();
+///
+/// // Bedrock ID (any regional prefix)
+/// let m2 = get_model("anthropic.claude-sonnet-4-5-20250929-v1:0").unwrap();
+/// let m3 = get_model("global.anthropic.claude-sonnet-4-5-20250929-v1:0").unwrap();
+///
+/// // Vertex AI ID
+/// let m4 = get_model("claude-sonnet-4-5@20250929").unwrap();
+///
+/// // All return the same model
+/// assert_eq!(m1.name, "Claude Sonnet 4.5");
+/// assert_eq!(m2.name, "Claude Sonnet 4.5");
+/// assert_eq!(m3.name, "Claude Sonnet 4.5");
+/// assert_eq!(m4.name, "Claude Sonnet 4.5");
+/// ```
 pub fn get_model(id: &str) -> Option<&'static Model> {
     get_model_by_anthropic_id(id)
         .or_else(|| get_model_by_bedrock_id(id))

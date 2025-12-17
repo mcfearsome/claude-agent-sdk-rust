@@ -1,6 +1,115 @@
-//! Streaming support for Claude API
+//! Streaming support for Claude API.
 //!
-//! This module handles Server-Sent Events (SSE) streaming from the Claude API.
+//! This module handles Server-Sent Events (SSE) streaming from the Claude API,
+//! providing real-time token generation and typed event parsing.
+//!
+//! # Streaming vs Non-Streaming
+//!
+//! | Aspect | Streaming | Non-Streaming |
+//! |--------|-----------|---------------|
+//! | Latency | First token immediately | Wait for full response |
+//! | UX | Progressive display | All-at-once |
+//! | Memory | Constant | Grows with response |
+//! | Use Case | Chat interfaces | Background processing |
+//!
+//! # Event Types
+//!
+//! The stream emits events in this order:
+//!
+//! 1. [`StreamEvent::MessageStart`] - Stream begins, provides message metadata
+//! 2. [`StreamEvent::ContentBlockStart`] - A new content block (text/tool/thinking) begins
+//! 3. [`StreamEvent::ContentBlockDelta`] - Incremental content updates
+//! 4. [`StreamEvent::ContentBlockStop`] - Content block complete
+//! 5. [`StreamEvent::MessageDelta`] - Final usage stats and stop reason
+//! 6. [`StreamEvent::MessageStop`] - Stream complete
+//!
+//! # Basic Streaming Example
+//!
+//! ```rust,no_run
+//! use claude_sdk::{ClaudeClient, MessagesRequest, Message, StreamEvent, ContentDelta};
+//! use futures::StreamExt;
+//!
+//! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+//! let client = ClaudeClient::anthropic(std::env::var("ANTHROPIC_API_KEY")?);
+//!
+//! let request = MessagesRequest::new(
+//!     "claude-sonnet-4-5-20250929",
+//!     1024,
+//!     vec![Message::user("Write a poem about Rust.")],
+//! );
+//!
+//! let mut stream = client.send_streaming(request).await?;
+//!
+//! while let Some(event) = stream.next().await {
+//!     match event? {
+//!         StreamEvent::ContentBlockDelta { delta, .. } => {
+//!             if let ContentDelta::TextDelta { text } = delta {
+//!                 print!("{}", text);  // Stream to console
+//!             }
+//!         }
+//!         StreamEvent::MessageDelta { usage, .. } => {
+//!             println!("\n[Used {} output tokens]", usage.output_tokens);
+//!         }
+//!         StreamEvent::MessageStop => break,
+//!         _ => {}
+//!     }
+//! }
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! # Handling Tool Use in Streams
+//!
+//! Tool calls are streamed as JSON deltas that need to be accumulated:
+//!
+//! ```rust,no_run
+//! use claude_sdk::{StreamEvent, ContentDelta};
+//!
+//! # fn example(event: StreamEvent) {
+//! match event {
+//!     StreamEvent::ContentBlockStart { content_block, .. } => {
+//!         // Tool use block starting - capture the tool name
+//!     }
+//!     StreamEvent::ContentBlockDelta { delta, .. } => {
+//!         if let ContentDelta::InputJsonDelta { partial_json } = delta {
+//!             // Accumulate JSON fragments
+//!             // parse when ContentBlockStop is received
+//!         }
+//!     }
+//!     StreamEvent::ContentBlockStop { .. } => {
+//!         // Tool JSON complete - now parse and execute
+//!     }
+//!     _ => {}
+//! }
+//! # }
+//! ```
+//!
+//! # Extended Thinking in Streams
+//!
+//! When extended thinking is enabled, thinking blocks are streamed first:
+//!
+//! ```rust,no_run
+//! use claude_sdk::{StreamEvent, ContentDelta};
+//!
+//! # fn example(event: StreamEvent) {
+//! match event {
+//!     StreamEvent::ContentBlockDelta { delta, .. } => {
+//!         match delta {
+//!             ContentDelta::ThinkingDelta { thinking } => {
+//!                 // Claude's reasoning process
+//!                 print!("[thinking] {}", thinking);
+//!             }
+//!             ContentDelta::TextDelta { text } => {
+//!                 // Final response
+//!                 print!("{}", text);
+//!             }
+//!             _ => {}
+//!         }
+//!     }
+//!     _ => {}
+//! }
+//! # }
+//! ```
 
 use crate::types::{ContentBlock, Role, StopReason, Usage};
 use serde::{Deserialize, Serialize};

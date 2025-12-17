@@ -8,6 +8,20 @@ license = "MIT"
 repository = "https://github.com/mcfearsome/claude-agent-sdk-rust"
 keywords = ["claude", "anthropic", "ai", "llm", "sdk"]
 categories = ["api-bindings", "asynchronous"]
+readme = "README.md"
+documentation = "https://docs.rs/claude-sdk"
+rust-version = "1.70"
+
+# docs.rs configuration
+[package.metadata.docs.rs]
+# Build documentation for all features
+all-features = true
+# Enable cfg(docsrs) for conditional documentation
+rustdoc-args = ["--cfg", "docsrs"]
+# Show feature badges on docs.rs
+cargo-args = ["-Zunstable-options", "-Zrustdoc-scrape-examples"]
+# Build targets to document
+targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
 # HTTP client

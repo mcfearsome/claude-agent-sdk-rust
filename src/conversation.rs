@@ -1,7 +1,160 @@
-//! Conversation builder for multi-turn interactions
+//! Conversation builder for multi-turn interactions.
 //!
-//! This module provides a builder for managing conversation state,
-//! including tool use and multi-turn exchanges.
+//! This module provides [`ConversationBuilder`], a fluent API for managing
+//! multi-turn conversations with Claude, including tool use and state management.
+//!
+//! # When to Use ConversationBuilder
+//!
+//! Use `ConversationBuilder` when you need to:
+//! - Maintain conversation history across multiple turns
+//! - Handle tool use/result cycles automatically
+//! - Cache system prompts or tools for cost savings
+//! - Estimate token usage before sending requests
+//!
+//! For single-turn requests, use [`MessagesRequest`] directly.
+//!
+//! # Basic Multi-Turn Conversation
+//!
+//! ```rust,no_run
+//! use claude_sdk::{ClaudeClient, ConversationBuilder, ContentBlock};
+//!
+//! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+//! let client = ClaudeClient::anthropic(std::env::var("ANTHROPIC_API_KEY")?);
+//!
+//! let mut conversation = ConversationBuilder::new()
+//!     .with_system("You are a helpful assistant.");
+//!
+//! // First turn
+//! conversation.add_user_message("What's the capital of France?");
+//! let response = client.send_message(
+//!     conversation.build("claude-sonnet-4-5-20250929", 256)
+//! ).await?;
+//!
+//! // Extract and add assistant response
+//! let assistant_text = response.content.iter()
+//!     .filter_map(|b| match b {
+//!         ContentBlock::Text { text, .. } => Some(text.as_str()),
+//!         _ => None,
+//!     })
+//!     .collect::<Vec<_>>()
+//!     .join("");
+//! conversation.add_assistant_message(&assistant_text);
+//!
+//! // Second turn (conversation history is maintained)
+//! conversation.add_user_message("What's its population?");
+//! let response = client.send_message(
+//!     conversation.build("claude-sonnet-4-5-20250929", 256)
+//! ).await?;
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! # Tool Use Workflow
+//!
+//! Handle tool calls in a multi-turn conversation:
+//!
+//! ```rust,no_run
+//! use claude_sdk::{ClaudeClient, ConversationBuilder, Tool, ContentBlock, StopReason};
+//! use serde_json::json;
+//!
+//! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+//! let client = ClaudeClient::anthropic(std::env::var("ANTHROPIC_API_KEY")?);
+//!
+//! let weather_tool = Tool {
+//!     name: "get_weather".into(),
+//!     description: "Get current weather for a city".into(),
+//!     input_schema: json!({
+//!         "type": "object",
+//!         "properties": { "city": { "type": "string" } },
+//!         "required": ["city"]
+//!     }),
+//!     disable_user_input: Some(true),
+//!     input_examples: None,
+//!     cache_control: None,
+//! };
+//!
+//! let mut conversation = ConversationBuilder::new()
+//!     .with_tool(weather_tool);
+//!
+//! conversation.add_user_message("What's the weather in Tokyo?");
+//!
+//! // Send request
+//! let response = client.send_message(
+//!     conversation.build("claude-sonnet-4-5-20250929", 1024)
+//! ).await?;
+//!
+//! // Check if Claude wants to use a tool
+//! if response.stop_reason == Some(StopReason::ToolUse) {
+//!     // Add Claude's response with tool use blocks
+//!     conversation.add_assistant_with_blocks(response.content.clone());
+//!
+//!     // Process each tool call
+//!     for block in &response.content {
+//!         if let ContentBlock::ToolUse { id, name, input, .. } = block {
+//!             // Execute the tool (your implementation)
+//!             let result = json!({"temperature": 22, "condition": "sunny"});
+//!
+//!             // Add the result
+//!             conversation.add_tool_result(id, result.to_string());
+//!         }
+//!     }
+//!
+//!     // Send again for final response
+//!     let final_response = client.send_message(
+//!         conversation.build("claude-sonnet-4-5-20250929", 1024)
+//!     ).await?;
+//! }
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! # Prompt Caching
+//!
+//! Cache system prompts and tools to reduce costs on repeated requests:
+//!
+//! ```rust
+//! use claude_sdk::{ConversationBuilder, Tool};
+//! use serde_json::json;
+//!
+//! // Cache a long system prompt (~5 min TTL, 90% cost reduction on cache hits)
+//! let conversation = ConversationBuilder::new()
+//!     .with_cached_system("You are an expert assistant with extensive knowledge...");
+//!
+//! // Cache tool definitions
+//! let tool = Tool {
+//!     name: "analyze".into(),
+//!     description: "Analyze data".into(),
+//!     input_schema: json!({"type": "object"}),
+//!     disable_user_input: Some(true),
+//!     input_examples: None,
+//!     cache_control: None,
+//! };
+//!
+//! let conversation = ConversationBuilder::new()
+//!     .with_cached_tool(tool);
+//! ```
+//!
+//! # Token Management
+//!
+//! Check if your conversation fits in the context window:
+//!
+//! ```rust
+//! use claude_sdk::{ConversationBuilder, models};
+//!
+//! let mut conversation = ConversationBuilder::new()
+//!     .with_system("You are helpful.");
+//! conversation.add_user_message("Tell me about Rust programming.");
+//!
+//! // Estimate tokens
+//! let tokens = conversation.estimate_tokens();
+//! println!("Estimated tokens: {}", tokens);
+//!
+//! // Check against model limits
+//! let model = &models::CLAUDE_SONNET_4_5;
+//! if conversation.fits_in_context(model, 1024, false) {
+//!     println!("Conversation fits!");
+//! }
+//! ```
 
 use crate::types::{
     CacheControl, ContentBlock, Message, MessagesRequest, Role, SystemBlock, SystemPrompt, Tool,
