@@ -1,6 +1,6 @@
 [package]
 name = "claude-sdk"
-version = "1.0.0"
+version = "1.0.1"
 edition = "2021"
 authors = ["Claude Agent SDK Contributors"]
 description = "Native Rust SDK for the Claude API with streaming support and tool execution"
