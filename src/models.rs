@@ -5,10 +5,21 @@
 //!
 //! # Available Models
 //!
-//! ## Latest (Claude 4.5)
+//! ## Latest (Claude 5)
 //!
 //! | Model | Best For | Max Output | Extended Thinking |
 //! |-------|----------|------------|-------------------|
+//! | [`CLAUDE_FABLE_5`] | Hardest knowledge work and coding | 64K | Yes |
+//! | [`CLAUDE_MYTHOS_5`] | Cybersecurity and biology research | 64K | Yes |
+//!
+//! ## Claude 4.x
+//!
+//! | Model | Best For | Max Output | Extended Thinking |
+//! |-------|----------|------------|-------------------|
+//! | [`CLAUDE_OPUS_4_8`] | Long-running agents/coding | 64K | Yes |
+//! | [`CLAUDE_OPUS_4_7`] | Long-running agents/coding | 64K | Yes |
+//! | [`CLAUDE_OPUS_4_6`] | Long-running agents/coding | 64K | Yes |
+//! | [`CLAUDE_SONNET_4_6`] | Best balance of speed and intelligence | 64K | Yes |
 //! | [`CLAUDE_SONNET_4_5`] | Complex agents, coding | 64K | Yes |
 //! | [`CLAUDE_HAIKU_4_5`] | Speed, near-frontier intelligence | 64K | Yes |
 //! | [`CLAUDE_OPUS_4_5`] | Maximum intelligence | 64K | Yes |
@@ -404,6 +415,154 @@ pub const CLAUDE_OPUS_4_5: Model = Model {
     description: "Maximum intelligence with practical performance",
 };
 
+/// Claude Sonnet 4.6 (placeholder date: 2026-01-15)
+///
+/// Best balance of speed and intelligence.
+pub const CLAUDE_SONNET_4_6: Model = Model {
+    name: "Claude Sonnet 4.6",
+    family: "sonnet",
+    version: "2026-01-15", // TODO: verify from API
+    anthropic_id: "claude-sonnet-4-6-20260115", // TODO: verify from API
+    bedrock_id: Some("anthropic.claude-sonnet-4-6-20260115-v1:0"), // TODO: verify from API
+    bedrock_global_id: Some("global.anthropic.claude-sonnet-4-6-20260115-v1:0"), // TODO: verify from API
+    vertex_id: Some("claude-sonnet-4-6@20260115"), // TODO: verify from API
+    max_context_tokens: 200_000,
+    max_context_tokens_extended: Some(1_000_000),
+    max_output_tokens: 64_000,
+    supports_vision: true,
+    supports_tools: true,
+    supports_caching: true,
+    supports_extended_thinking: true,
+    supports_effort: false,
+    cost_per_mtok_input: 3.0,   // TODO: verify from API
+    cost_per_mtok_output: 15.0, // TODO: verify from API
+    description: "Best balance of speed and intelligence",
+};
+
+/// Claude Opus 4.6 (placeholder date: 2026-02-01)
+///
+/// Frontier intelligence for long-running agents and coding.
+pub const CLAUDE_OPUS_4_6: Model = Model {
+    name: "Claude Opus 4.6",
+    family: "opus",
+    version: "2026-02-01", // TODO: verify from API
+    anthropic_id: "claude-opus-4-6-20260201", // TODO: verify from API
+    bedrock_id: Some("anthropic.claude-opus-4-6-20260201-v1:0"), // TODO: verify from API
+    bedrock_global_id: Some("global.anthropic.claude-opus-4-6-20260201-v1:0"), // TODO: verify from API
+    vertex_id: Some("claude-opus-4-6@20260201"), // TODO: verify from API
+    max_context_tokens: 200_000,
+    max_context_tokens_extended: None,
+    max_output_tokens: 64_000,
+    supports_vision: true,
+    supports_tools: true,
+    supports_caching: true,
+    supports_extended_thinking: true,
+    supports_effort: true,
+    cost_per_mtok_input: 5.0,   // TODO: verify from API
+    cost_per_mtok_output: 25.0, // TODO: verify from API
+    description: "Frontier intelligence for long-running agents and coding",
+};
+
+/// Claude Opus 4.7 (placeholder date: 2026-03-01)
+///
+/// Frontier intelligence for long-running agents and coding.
+pub const CLAUDE_OPUS_4_7: Model = Model {
+    name: "Claude Opus 4.7",
+    family: "opus",
+    version: "2026-03-01", // TODO: verify from API
+    anthropic_id: "claude-opus-4-7-20260301", // TODO: verify from API
+    bedrock_id: Some("anthropic.claude-opus-4-7-20260301-v1:0"), // TODO: verify from API
+    bedrock_global_id: Some("global.anthropic.claude-opus-4-7-20260301-v1:0"), // TODO: verify from API
+    vertex_id: Some("claude-opus-4-7@20260301"), // TODO: verify from API
+    max_context_tokens: 200_000,
+    max_context_tokens_extended: None,
+    max_output_tokens: 64_000,
+    supports_vision: true,
+    supports_tools: true,
+    supports_caching: true,
+    supports_extended_thinking: true,
+    supports_effort: true,
+    cost_per_mtok_input: 5.0,   // TODO: verify from API
+    cost_per_mtok_output: 25.0, // TODO: verify from API
+    description: "Frontier intelligence for long-running agents and coding",
+};
+
+/// Claude Opus 4.8 (placeholder date: 2026-04-01)
+///
+/// Frontier intelligence for long-running agents and coding.
+pub const CLAUDE_OPUS_4_8: Model = Model {
+    name: "Claude Opus 4.8",
+    family: "opus",
+    version: "2026-04-01", // TODO: verify from API
+    anthropic_id: "claude-opus-4-8-20260401", // TODO: verify from API
+    bedrock_id: Some("anthropic.claude-opus-4-8-20260401-v1:0"), // TODO: verify from API
+    bedrock_global_id: Some("global.anthropic.claude-opus-4-8-20260401-v1:0"), // TODO: verify from API
+    vertex_id: Some("claude-opus-4-8@20260401"), // TODO: verify from API
+    max_context_tokens: 200_000,
+    max_context_tokens_extended: None,
+    max_output_tokens: 64_000,
+    supports_vision: true,
+    supports_tools: true,
+    supports_caching: true,
+    supports_extended_thinking: true,
+    supports_effort: true,
+    cost_per_mtok_input: 5.0,   // TODO: verify from API
+    cost_per_mtok_output: 25.0, // TODO: verify from API
+    description: "Frontier intelligence for long-running agents and coding",
+};
+
+//
+// Latest Models (Claude 5)
+//
+
+/// Claude Fable 5 (placeholder date: 2026-06-01)
+///
+/// Next generation model for the hardest knowledge work and coding.
+pub const CLAUDE_FABLE_5: Model = Model {
+    name: "Claude Fable 5",
+    family: "fable",
+    version: "2026-06-01", // TODO: verify from API
+    anthropic_id: "claude-fable-5-20260601", // TODO: verify from API
+    bedrock_id: Some("anthropic.claude-fable-5-20260601-v1:0"), // TODO: verify from API
+    bedrock_global_id: Some("global.anthropic.claude-fable-5-20260601-v1:0"), // TODO: verify from API
+    vertex_id: Some("claude-fable-5@20260601"), // TODO: verify from API
+    max_context_tokens: 200_000,
+    max_context_tokens_extended: Some(1_000_000),
+    max_output_tokens: 64_000,
+    supports_vision: true,
+    supports_tools: true,
+    supports_caching: true,
+    supports_extended_thinking: true,
+    supports_effort: false,
+    cost_per_mtok_input: 3.0,   // TODO: verify from API
+    cost_per_mtok_output: 15.0, // TODO: verify from API
+    description: "Next generation for hardest knowledge work and coding",
+};
+
+/// Claude Mythos 5 (placeholder date: 2026-06-15)
+///
+/// Most capable model for cybersecurity and biology research.
+pub const CLAUDE_MYTHOS_5: Model = Model {
+    name: "Claude Mythos 5",
+    family: "mythos",
+    version: "2026-06-15", // TODO: verify from API
+    anthropic_id: "claude-mythos-5-20260615", // TODO: verify from API
+    bedrock_id: Some("anthropic.claude-mythos-5-20260615-v1:0"), // TODO: verify from API
+    bedrock_global_id: Some("global.anthropic.claude-mythos-5-20260615-v1:0"), // TODO: verify from API
+    vertex_id: Some("claude-mythos-5@20260615"), // TODO: verify from API
+    max_context_tokens: 200_000,
+    max_context_tokens_extended: Some(1_000_000),
+    max_output_tokens: 64_000,
+    supports_vision: true,
+    supports_tools: true,
+    supports_caching: true,
+    supports_extended_thinking: true,
+    supports_effort: false,
+    cost_per_mtok_input: 5.0,   // TODO: verify from API
+    cost_per_mtok_output: 25.0, // TODO: verify from API
+    description: "Most capable for cybersecurity and biology research",
+};
+
 //
 // Legacy Models (Claude 4.x and 3.x)
 //
@@ -546,7 +705,15 @@ pub const CLAUDE_HAIKU_3: Model = Model {
 
 /// List of all available models (latest first)
 pub const ALL_MODELS: &[&Model] = &[
-    // Latest (Claude 4.5)
+    // Latest (Claude 5)
+    &CLAUDE_MYTHOS_5,
+    &CLAUDE_FABLE_5,
+    // Claude 4.6+
+    &CLAUDE_OPUS_4_8,
+    &CLAUDE_OPUS_4_7,
+    &CLAUDE_OPUS_4_6,
+    &CLAUDE_SONNET_4_6,
+    // Claude 4.5
     &CLAUDE_SONNET_4_5,
     &CLAUDE_HAIKU_4_5,
     &CLAUDE_OPUS_4_5,
@@ -845,5 +1012,168 @@ mod tests {
         for model in ALL_MODELS {
             assert!(ids.insert(model.anthropic_id));
         }
+    }
+
+    // --- New model tests ---
+
+    #[test]
+    fn test_claude_sonnet_4_6_exists() {
+        assert_eq!(CLAUDE_SONNET_4_6.name, "Claude Sonnet 4.6");
+        assert_eq!(CLAUDE_SONNET_4_6.family, "sonnet");
+        assert_eq!(CLAUDE_SONNET_4_6.anthropic_id, "claude-sonnet-4-6-20260115");
+        assert!(CLAUDE_SONNET_4_6.supports_vision);
+        assert!(CLAUDE_SONNET_4_6.supports_tools);
+        assert!(CLAUDE_SONNET_4_6.supports_caching);
+        assert!(CLAUDE_SONNET_4_6.supports_extended_thinking);
+        assert!(!CLAUDE_SONNET_4_6.supports_effort);
+        assert!(CLAUDE_SONNET_4_6.bedrock_global_id.is_some());
+    }
+
+    #[test]
+    fn test_claude_sonnet_4_6_lookup() {
+        let model = get_model_by_anthropic_id("claude-sonnet-4-6-20260115");
+        assert!(model.is_some());
+        assert_eq!(model.unwrap().name, "Claude Sonnet 4.6");
+
+        let model = get_model("claude-sonnet-4-6-20260115");
+        assert!(model.is_some());
+    }
+
+    #[test]
+    fn test_claude_opus_4_6_exists() {
+        assert_eq!(CLAUDE_OPUS_4_6.name, "Claude Opus 4.6");
+        assert_eq!(CLAUDE_OPUS_4_6.family, "opus");
+        assert_eq!(CLAUDE_OPUS_4_6.anthropic_id, "claude-opus-4-6-20260201");
+        assert!(CLAUDE_OPUS_4_6.supports_vision);
+        assert!(CLAUDE_OPUS_4_6.supports_tools);
+        assert!(CLAUDE_OPUS_4_6.supports_caching);
+        assert!(CLAUDE_OPUS_4_6.supports_extended_thinking);
+        assert!(CLAUDE_OPUS_4_6.supports_effort);
+        assert!(CLAUDE_OPUS_4_6.bedrock_global_id.is_some());
+    }
+
+    #[test]
+    fn test_claude_opus_4_6_lookup() {
+        let model = get_model_by_anthropic_id("claude-opus-4-6-20260201");
+        assert!(model.is_some());
+        assert_eq!(model.unwrap().name, "Claude Opus 4.6");
+
+        let model = get_model("claude-opus-4-6-20260201");
+        assert!(model.is_some());
+    }
+
+    #[test]
+    fn test_claude_opus_4_7_exists() {
+        assert_eq!(CLAUDE_OPUS_4_7.name, "Claude Opus 4.7");
+        assert_eq!(CLAUDE_OPUS_4_7.family, "opus");
+        assert_eq!(CLAUDE_OPUS_4_7.anthropic_id, "claude-opus-4-7-20260301");
+        assert!(CLAUDE_OPUS_4_7.supports_vision);
+        assert!(CLAUDE_OPUS_4_7.supports_tools);
+        assert!(CLAUDE_OPUS_4_7.supports_caching);
+        assert!(CLAUDE_OPUS_4_7.supports_extended_thinking);
+        assert!(CLAUDE_OPUS_4_7.supports_effort);
+        assert!(CLAUDE_OPUS_4_7.bedrock_global_id.is_some());
+    }
+
+    #[test]
+    fn test_claude_opus_4_7_lookup() {
+        let model = get_model_by_anthropic_id("claude-opus-4-7-20260301");
+        assert!(model.is_some());
+        assert_eq!(model.unwrap().name, "Claude Opus 4.7");
+
+        let model = get_model("claude-opus-4-7-20260301");
+        assert!(model.is_some());
+    }
+
+    #[test]
+    fn test_claude_opus_4_8_exists() {
+        assert_eq!(CLAUDE_OPUS_4_8.name, "Claude Opus 4.8");
+        assert_eq!(CLAUDE_OPUS_4_8.family, "opus");
+        assert_eq!(CLAUDE_OPUS_4_8.anthropic_id, "claude-opus-4-8-20260401");
+        assert!(CLAUDE_OPUS_4_8.supports_vision);
+        assert!(CLAUDE_OPUS_4_8.supports_tools);
+        assert!(CLAUDE_OPUS_4_8.supports_caching);
+        assert!(CLAUDE_OPUS_4_8.supports_extended_thinking);
+        assert!(CLAUDE_OPUS_4_8.supports_effort);
+        assert!(CLAUDE_OPUS_4_8.bedrock_global_id.is_some());
+    }
+
+    #[test]
+    fn test_claude_opus_4_8_lookup() {
+        let model = get_model_by_anthropic_id("claude-opus-4-8-20260401");
+        assert!(model.is_some());
+        assert_eq!(model.unwrap().name, "Claude Opus 4.8");
+
+        let model = get_model("claude-opus-4-8-20260401");
+        assert!(model.is_some());
+    }
+
+    #[test]
+    fn test_claude_fable_5_exists() {
+        assert_eq!(CLAUDE_FABLE_5.name, "Claude Fable 5");
+        assert_eq!(CLAUDE_FABLE_5.family, "fable");
+        assert_eq!(CLAUDE_FABLE_5.anthropic_id, "claude-fable-5-20260601");
+        assert!(CLAUDE_FABLE_5.supports_vision);
+        assert!(CLAUDE_FABLE_5.supports_tools);
+        assert!(CLAUDE_FABLE_5.supports_caching);
+        assert!(CLAUDE_FABLE_5.supports_extended_thinking);
+        assert!(!CLAUDE_FABLE_5.supports_effort);
+        assert!(CLAUDE_FABLE_5.bedrock_global_id.is_some());
+        assert_eq!(CLAUDE_FABLE_5.max_context_tokens_extended, Some(1_000_000));
+    }
+
+    #[test]
+    fn test_claude_fable_5_lookup() {
+        let model = get_model_by_anthropic_id("claude-fable-5-20260601");
+        assert!(model.is_some());
+        assert_eq!(model.unwrap().name, "Claude Fable 5");
+
+        let model = get_model("claude-fable-5-20260601");
+        assert!(model.is_some());
+    }
+
+    #[test]
+    fn test_claude_mythos_5_exists() {
+        assert_eq!(CLAUDE_MYTHOS_5.name, "Claude Mythos 5");
+        assert_eq!(CLAUDE_MYTHOS_5.family, "mythos");
+        assert_eq!(CLAUDE_MYTHOS_5.anthropic_id, "claude-mythos-5-20260615");
+        assert!(CLAUDE_MYTHOS_5.supports_vision);
+        assert!(CLAUDE_MYTHOS_5.supports_tools);
+        assert!(CLAUDE_MYTHOS_5.supports_caching);
+        assert!(CLAUDE_MYTHOS_5.supports_extended_thinking);
+        assert!(!CLAUDE_MYTHOS_5.supports_effort);
+        assert!(CLAUDE_MYTHOS_5.bedrock_global_id.is_some());
+        assert_eq!(CLAUDE_MYTHOS_5.max_context_tokens_extended, Some(1_000_000));
+    }
+
+    #[test]
+    fn test_claude_mythos_5_lookup() {
+        let model = get_model_by_anthropic_id("claude-mythos-5-20260615");
+        assert!(model.is_some());
+        assert_eq!(model.unwrap().name, "Claude Mythos 5");
+
+        let model = get_model("claude-mythos-5-20260615");
+        assert!(model.is_some());
+    }
+
+    #[test]
+    fn test_new_models_in_all_models() {
+        let ids: Vec<&str> = ALL_MODELS.iter().map(|m| m.anthropic_id).collect();
+        assert!(ids.contains(&"claude-sonnet-4-6-20260115"));
+        assert!(ids.contains(&"claude-opus-4-6-20260201"));
+        assert!(ids.contains(&"claude-opus-4-7-20260301"));
+        assert!(ids.contains(&"claude-opus-4-8-20260401"));
+        assert!(ids.contains(&"claude-fable-5-20260601"));
+        assert!(ids.contains(&"claude-mythos-5-20260615"));
+    }
+
+    #[test]
+    fn test_new_models_bedrock_global_ids() {
+        assert!(CLAUDE_SONNET_4_6.bedrock_global_id().is_some());
+        assert!(CLAUDE_OPUS_4_6.bedrock_global_id().is_some());
+        assert!(CLAUDE_OPUS_4_7.bedrock_global_id().is_some());
+        assert!(CLAUDE_OPUS_4_8.bedrock_global_id().is_some());
+        assert!(CLAUDE_FABLE_5.bedrock_global_id().is_some());
+        assert!(CLAUDE_MYTHOS_5.bedrock_global_id().is_some());
     }
 }
