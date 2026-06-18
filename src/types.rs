@@ -177,6 +177,10 @@ pub struct Citation {
 pub struct CacheControl {
     #[serde(rename = "type")]
     pub cache_type: CacheType,
+
+    /// TTL for cached content
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ttl: Option<CacheTtl>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -185,11 +189,31 @@ pub enum CacheType {
     Ephemeral,
 }
 
+/// Cache TTL duration
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum CacheTtl {
+    /// 5-minute TTL (default)
+    #[serde(rename = "5m")]
+    FiveMinutes,
+    /// 1-hour TTL
+    #[serde(rename = "1h")]
+    OneHour,
+}
+
 impl CacheControl {
     /// Create an ephemeral cache control
     pub fn ephemeral() -> Self {
         Self {
             cache_type: CacheType::Ephemeral,
+            ttl: None,
+        }
+    }
+
+    /// Create an ephemeral cache control with a specific TTL
+    pub fn ephemeral_with_ttl(ttl: CacheTtl) -> Self {
+        Self {
+            cache_type: CacheType::Ephemeral,
+            ttl: Some(ttl),
         }
     }
 }
@@ -315,8 +339,27 @@ impl ToolChoice {
     }
 }
 
-/// Token usage information
+/// Detailed output token breakdown
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct OutputTokensDetails {
+    /// Tokens used for thinking
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub thinking_tokens: Option<u32>,
+}
+
+/// Server tool usage counts
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct ServerToolUsage {
+    /// Number of web search requests made
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub web_search_requests: Option<u32>,
+    /// Number of web fetch requests made
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub web_fetch_requests: Option<u32>,
+}
+
+/// Token usage information
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Usage {
     pub input_tokens: u32,
     pub output_tokens: u32,
@@ -328,10 +371,26 @@ pub struct Usage {
     /// Tokens read from cache (prompt caching)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub cache_read_input_tokens: Option<u32>,
+
+    /// Detailed breakdown of output tokens
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub output_tokens_details: Option<OutputTokensDetails>,
+
+    /// Server tool invocation counts
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub server_tool_use: Option<ServerToolUsage>,
+
+    /// Which service tier handled this request
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub service_tier: Option<String>,
+
+    /// Which geographic region processed this request
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub inference_geo: Option<String>,
 }
 
 /// Extended usage information for responses with thinking
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ExtendedUsage {
     #[serde(flatten)]
     pub base: Usage,
@@ -975,5 +1034,69 @@ mod tests {
 
         let parsed: EffortLevel = serde_json::from_str(r#""max""#).unwrap();
         assert_eq!(parsed, EffortLevel::Max);
+    }
+
+    // Task 5: CacheTtl tests
+
+    #[test]
+    fn test_cache_control_with_ttl() {
+        let cache = CacheControl::ephemeral_with_ttl(CacheTtl::OneHour);
+        let json = serde_json::to_value(&cache).unwrap();
+        assert_eq!(json["type"], "ephemeral");
+        assert_eq!(json["ttl"], "1h");
+    }
+
+    #[test]
+    fn test_cache_control_ttl_deserialization() {
+        let json = r#"{"type": "ephemeral", "ttl": "5m"}"#;
+        let cache: CacheControl = serde_json::from_str(json).unwrap();
+        assert_eq!(cache.ttl, Some(CacheTtl::FiveMinutes));
+    }
+
+    #[test]
+    fn test_cache_control_without_ttl_still_works() {
+        // Existing behavior: no ttl field
+        let cache = CacheControl::ephemeral();
+        let json = serde_json::to_string(&cache).unwrap();
+        assert_eq!(json, r#"{"type":"ephemeral"}"#);
+        assert_eq!(cache.ttl, None);
+    }
+
+    // Task 6: Usage expansion tests
+
+    #[test]
+    fn test_usage_with_details_deserialization() {
+        let json = r#"{
+            "input_tokens": 100,
+            "output_tokens": 50,
+            "cache_creation_input_tokens": 10,
+            "cache_read_input_tokens": 5,
+            "output_tokens_details": {
+                "thinking_tokens": 20
+            },
+            "server_tool_use": {
+                "web_search_requests": 3
+            },
+            "service_tier": "priority",
+            "inference_geo": "us"
+        }"#;
+
+        let usage: Usage = serde_json::from_str(json).unwrap();
+        assert_eq!(usage.input_tokens, 100);
+        assert_eq!(usage.output_tokens, 50);
+        let details = usage.output_tokens_details.unwrap();
+        assert_eq!(details.thinking_tokens, Some(20));
+        let server = usage.server_tool_use.unwrap();
+        assert_eq!(server.web_search_requests, Some(3));
+        assert_eq!(usage.service_tier.as_deref(), Some("priority"));
+    }
+
+    #[test]
+    fn test_usage_without_new_fields_still_works() {
+        let json = r#"{"input_tokens": 10, "output_tokens": 5}"#;
+        let usage: Usage = serde_json::from_str(json).unwrap();
+        assert_eq!(usage.input_tokens, 10);
+        assert!(usage.output_tokens_details.is_none());
+        assert!(usage.server_tool_use.is_none());
     }
 }
