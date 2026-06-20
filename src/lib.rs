@@ -110,13 +110,13 @@
 //! Define and handle tool calls:
 //!
 //! ```rust,no_run
-//! use claude_sdk::{ClaudeClient, MessagesRequest, Message, Tool, ContentBlock};
+//! use claude_sdk::{ClaudeClient, MessagesRequest, Message, CustomTool, ContentBlock};
 //! use serde_json::json;
 //!
 //! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
 //! let client = ClaudeClient::anthropic(std::env::var("ANTHROPIC_API_KEY")?);
 //!
-//! let weather_tool = Tool {
+//! let weather_tool = CustomTool {
 //!     name: "get_weather".into(),
 //!     description: "Get weather for a location".into(),
 //!     input_schema: json!({
@@ -136,7 +136,7 @@
 //!     1024,
 //!     vec![Message::user("What's the weather in Tokyo?")],
 //! )
-//! .with_tools(vec![weather_tool]);
+//! .with_custom_tools(vec![weather_tool]);
 //!
 //! let response = client.send_message(request).await?;
 //!
@@ -235,6 +235,7 @@ pub mod files;
 pub mod models;
 pub mod prompts;
 pub mod retry;
+pub mod server_tools;
 pub mod streaming;
 pub mod structured;
 pub mod tokens;
@@ -246,8 +247,9 @@ pub use conversation::ConversationBuilder;
 pub use error::{Error, Result};
 pub use models::{BedrockRegion, Model};
 pub use streaming::{ContentDelta, MessageDelta, StreamEvent};
+#[allow(deprecated)]
 pub use types::{
-    CacheTtl, ContentBlock, EffortLevel, Message, MessagesRequest, MessagesResponse, Metadata,
-    OutputConfig, OutputTokensDetails, RateLimitInfo, RefusalCategory, Role, ServerToolUsage,
-    ServiceTier, StopDetails, StopReason, Tool, ToolChoice, Usage,
+    CacheTtl, ContentBlock, CustomTool, EffortLevel, Message, MessagesRequest, MessagesResponse,
+    Metadata, OutputConfig, OutputTokensDetails, RateLimitInfo, RefusalCategory, Role,
+    ServerToolUsage, ServiceTier, StopDetails, StopReason, Tool, ToolChoice, ToolDefinition, Usage,
 };

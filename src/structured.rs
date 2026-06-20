@@ -3,12 +3,12 @@
 //! This module provides helpers for getting structured JSON outputs from Claude
 //! by using tool_choice to force a specific tool that returns the desired schema.
 
-use crate::types::{Tool, ToolChoice};
+use crate::types::{CustomTool, ToolChoice};
 use serde_json::Value;
 
 /// Create a tool for structured JSON extraction
 ///
-/// This is a convenience function for creating a tool that forces Claude
+/// This is a convenience function for creating a [`CustomTool`] that forces Claude
 /// to return structured JSON matching your schema.
 ///
 /// # Example
@@ -37,8 +37,8 @@ pub fn json_schema_tool(
     name: impl Into<String>,
     description: impl Into<String>,
     schema: Value,
-) -> Tool {
-    Tool {
+) -> CustomTool {
+    CustomTool {
         name: name.into(),
         description: description.into(),
         input_schema: schema,
@@ -70,7 +70,7 @@ pub fn json_schema_tool(
 ///     1024,
 ///     vec![/*messages*/]
 /// )
-/// .with_tools(vec![tool.clone()])
+/// .with_custom_tools(vec![tool.clone()])
 /// .with_tool_choice(force_tool("extract_data"));
 /// ```
 pub fn force_tool(tool_name: impl Into<String>) -> ToolChoice {

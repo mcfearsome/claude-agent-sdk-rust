@@ -13,7 +13,7 @@
 //! cargo run --example tool_use
 //! ```
 
-use claude_sdk::{ClaudeClient, ContentBlock, ConversationBuilder, StreamEvent, Tool};
+use claude_sdk::{ClaudeClient, ContentBlock, ConversationBuilder, CustomTool, StreamEvent};
 use futures::StreamExt;
 use serde_json::json;
 
@@ -32,7 +32,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("=================================\n");
 
     // Define tools
-    let get_weather_tool = Tool {
+    let get_weather_tool = CustomTool {
         name: "get_weather".into(),
         description: "Get the current weather for a given location".into(),
         input_schema: json!({
@@ -55,7 +55,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         cache_control: None,
     };
 
-    let calculate_tool = Tool {
+    let calculate_tool = CustomTool {
         name: "calculate".into(),
         description: "Perform basic arithmetic calculations".into(),
         input_schema: json!({

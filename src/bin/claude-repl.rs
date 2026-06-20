@@ -16,7 +16,7 @@
 //! cargo run --bin claude-repl
 //! ```
 
-use claude_sdk::{models, ClaudeClient, ContentBlock, ConversationBuilder, StreamEvent, Tool};
+use claude_sdk::{models, ClaudeClient, ContentBlock, ConversationBuilder, StreamEvent};
 use futures::StreamExt;
 use rustyline::error::ReadlineError;
 use rustyline::DefaultEditor;
@@ -290,7 +290,7 @@ impl Repl {
         struct SavedConversation {
             config: ReplConfig,
             messages: Vec<claude_sdk::Message>,
-            tools: Vec<Tool>,
+            tools: Vec<claude_sdk::ToolDefinition>,
             system: Option<claude_sdk::types::SystemPrompt>,
         }
 
@@ -318,7 +318,7 @@ impl Repl {
         struct SavedConversation {
             config: ReplConfig,
             messages: Vec<claude_sdk::Message>,
-            tools: Vec<Tool>,
+            tools: Vec<claude_sdk::ToolDefinition>,
             system: Option<claude_sdk::types::SystemPrompt>,
         }
 

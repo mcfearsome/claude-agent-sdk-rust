@@ -54,13 +54,13 @@
 //! Handle tool calls in a multi-turn conversation:
 //!
 //! ```rust,no_run
-//! use claude_sdk::{ClaudeClient, ConversationBuilder, Tool, ContentBlock, StopReason};
+//! use claude_sdk::{ClaudeClient, ConversationBuilder, CustomTool, ContentBlock, StopReason};
 //! use serde_json::json;
 //!
 //! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
 //! let client = ClaudeClient::anthropic(std::env::var("ANTHROPIC_API_KEY")?);
 //!
-//! let weather_tool = Tool {
+//! let weather_tool = CustomTool {
 //!     name: "get_weather".into(),
 //!     description: "Get current weather for a city".into(),
 //!     input_schema: json!({
@@ -113,7 +113,7 @@
 //! Cache system prompts and tools to reduce costs on repeated requests:
 //!
 //! ```rust
-//! use claude_sdk::{ConversationBuilder, Tool};
+//! use claude_sdk::{ConversationBuilder, CustomTool};
 //! use serde_json::json;
 //!
 //! // Cache a long system prompt (~5 min TTL, 90% cost reduction on cache hits)
@@ -121,7 +121,7 @@
 //!     .with_cached_system("You are an expert assistant with extensive knowledge...");
 //!
 //! // Cache tool definitions
-//! let tool = Tool {
+//! let tool = CustomTool {
 //!     name: "analyze".into(),
 //!     description: "Analyze data".into(),
 //!     input_schema: json!({"type": "object"}),
@@ -157,7 +157,8 @@
 //! ```
 
 use crate::types::{
-    CacheControl, ContentBlock, Message, MessagesRequest, Role, SystemBlock, SystemPrompt, Tool,
+    CacheControl, ContentBlock, CustomTool, Message, MessagesRequest, Role, SystemBlock,
+    SystemPrompt, ToolDefinition,
 };
 
 /// Builder for managing multi-turn conversations with Claude
@@ -183,7 +184,7 @@ use crate::types::{
 #[derive(Debug, Clone)]
 pub struct ConversationBuilder {
     messages: Vec<Message>,
-    tools: Vec<Tool>,
+    tools: Vec<ToolDefinition>,
     system: Option<SystemPrompt>,
 }
 
@@ -235,13 +236,16 @@ impl ConversationBuilder {
 
     /// Add a tool definition
     ///
+    /// Accepts anything that implements `Into<ToolDefinition>`, including
+    /// [`CustomTool`], [`ToolDefinition`], or `serde_json::Value` (for server tools).
+    ///
     /// # Example
     ///
     /// ```rust
-    /// use claude_sdk::{ConversationBuilder, Tool};
+    /// use claude_sdk::{ConversationBuilder, CustomTool};
     /// use serde_json::json;
     ///
-    /// let tool = Tool {
+    /// let tool = CustomTool {
     ///     name: "get_weather".into(),
     ///     description: "Get weather for a location".into(),
     ///     input_schema: json!({
@@ -259,23 +263,23 @@ impl ConversationBuilder {
     /// let conversation = ConversationBuilder::new()
     ///     .with_tool(tool);
     /// ```
-    pub fn with_tool(mut self, tool: Tool) -> Self {
-        self.tools.push(tool);
+    pub fn with_tool(mut self, tool: impl Into<ToolDefinition>) -> Self {
+        self.tools.push(tool.into());
         self
     }
 
     /// Add multiple tool definitions
-    pub fn with_tools(mut self, tools: Vec<Tool>) -> Self {
+    pub fn with_tools(mut self, tools: Vec<ToolDefinition>) -> Self {
         self.tools.extend(tools);
         self
     }
 
-    /// Add a tool with caching enabled
+    /// Add a custom tool with caching enabled
     ///
     /// This caches the tool definition, reducing costs when using the same tools repeatedly.
-    pub fn with_cached_tool(mut self, mut tool: Tool) -> Self {
+    pub fn with_cached_tool(mut self, mut tool: CustomTool) -> Self {
         tool.cache_control = Some(CacheControl::ephemeral());
-        self.tools.push(tool);
+        self.tools.push(ToolDefinition::Custom(tool));
         self
     }
 
@@ -356,7 +360,7 @@ impl ConversationBuilder {
     }
 
     /// Get the tool definitions
-    pub fn tools(&self) -> &[Tool] {
+    pub fn tools(&self) -> &[ToolDefinition] {
         &self.tools
     }
 
@@ -508,7 +512,7 @@ mod tests {
 
     #[test]
     fn test_with_tools() {
-        let tool = Tool {
+        let tool = CustomTool {
             name: "test_tool".into(),
             description: "A test tool".into(),
             input_schema: json!({"type": "object"}),
@@ -520,7 +524,10 @@ mod tests {
         let conv = ConversationBuilder::new().with_tool(tool);
 
         assert_eq!(conv.tools().len(), 1);
-        assert_eq!(conv.tools()[0].name, "test_tool");
+        match &conv.tools()[0] {
+            ToolDefinition::Custom(t) => assert_eq!(t.name, "test_tool"),
+            _ => panic!("Expected Custom tool"),
+        }
     }
 
     #[test]

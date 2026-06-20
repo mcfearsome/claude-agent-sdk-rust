@@ -12,7 +12,7 @@
 //! cargo run --example prompt_caching
 //! ```
 
-use claude_sdk::{ClaudeClient, ConversationBuilder, Tool};
+use claude_sdk::{ClaudeClient, ConversationBuilder, CustomTool};
 use serde_json::json;
 use std::time::Duration;
 
@@ -30,7 +30,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Demonstrating cost reduction via prompt caching\n");
 
     // Define tools (these will be cached)
-    let search_tool = Tool {
+    let search_tool = CustomTool {
         name: "search_code".into(),
         description: "Search through a codebase for specific patterns".into(),
         input_schema: json!({
@@ -52,7 +52,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         cache_control: None, // Will be set by with_cached_tool()
     };
 
-    let read_file_tool = Tool {
+    let read_file_tool = CustomTool {
         name: "read_file".into(),
         description: "Read contents of a file".into(),
         input_schema: json!({

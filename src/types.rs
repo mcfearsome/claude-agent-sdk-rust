@@ -6,13 +6,14 @@
 //! - [`MessagesResponse`] - Response from the Messages API
 //! - [`Message`] - Conversation messages with user/assistant roles
 //! - [`ContentBlock`] - Text, images, documents, tool calls, and more
-//! - [`Tool`] - Tool definitions for function calling
+//! - [`CustomTool`] - Custom client-side tool definitions
+//! - [`ToolDefinition`] - Enum wrapping custom and server tools
 //! - [`ToolChoice`] - Control how Claude uses tools
 //!
 //! # Example
 //!
 //! ```rust
-//! use claude_sdk::types::{MessagesRequest, Message, Tool, ToolChoice};
+//! use claude_sdk::types::{MessagesRequest, Message, CustomTool, ToolChoice};
 //! use serde_json::json;
 //!
 //! // Create a basic request
@@ -446,9 +447,34 @@ pub struct SystemBlock {
     pub cache_control: Option<CacheControl>,
 }
 
-/// Tool definition
+/// Custom client-side tool definition
+///
+/// Defines a tool with a name, description, and JSON Schema for its inputs.
+/// Claude can call this tool and the client handles execution.
+///
+/// # Example
+///
+/// ```rust
+/// use claude_sdk::CustomTool;
+/// use serde_json::json;
+///
+/// let tool = CustomTool {
+///     name: "get_weather".into(),
+///     description: "Get weather for a location".into(),
+///     input_schema: json!({
+///         "type": "object",
+///         "properties": {
+///             "location": { "type": "string" }
+///         },
+///         "required": ["location"]
+///     }),
+///     disable_user_input: Some(true),
+///     input_examples: None,
+///     cache_control: None,
+/// };
+/// ```
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Tool {
+pub struct CustomTool {
     pub name: String,
     pub description: String,
     pub input_schema: serde_json::Value,
@@ -467,6 +493,60 @@ pub struct Tool {
     /// Cache control for this tool definition
     #[serde(skip_serializing_if = "Option::is_none")]
     pub cache_control: Option<CacheControl>,
+}
+
+/// Renamed to [`CustomTool`] in v2.0. Use `CustomTool` directly.
+#[deprecated(
+    since = "2.0.0",
+    note = "Renamed to CustomTool. Use CustomTool directly."
+)]
+pub type Tool = CustomTool;
+
+/// Tool definition -- either a custom client tool or a built-in server tool.
+///
+/// Use this type in [`MessagesRequest::tools`].
+///
+/// # Variants
+///
+/// - [`ToolDefinition::Custom`] - A client-side tool with name, description, and JSON schema
+/// - [`ToolDefinition::Server`] - Any server-managed tool (web search, code execution, etc.)
+///
+/// # Example
+///
+/// ```rust
+/// use claude_sdk::{CustomTool, ToolDefinition};
+/// use serde_json::json;
+///
+/// // Custom tool
+/// let custom = ToolDefinition::Custom(CustomTool {
+///     name: "my_tool".into(),
+///     description: "A custom tool".into(),
+///     input_schema: json!({"type": "object"}),
+///     disable_user_input: None,
+///     input_examples: None,
+///     cache_control: None,
+/// });
+///
+/// // Server tool (raw JSON)
+/// let server = ToolDefinition::Server(json!({
+///     "type": "web_search_20250305",
+///     "name": "web_search",
+///     "max_uses": 5
+/// }));
+/// ```
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum ToolDefinition {
+    /// Custom client-side tool with name, description, and JSON schema
+    Custom(CustomTool),
+    /// Any server tool -- uses raw JSON since server tool types vary
+    Server(serde_json::Value),
+}
+
+impl From<CustomTool> for ToolDefinition {
+    fn from(tool: CustomTool) -> Self {
+        ToolDefinition::Custom(tool)
+    }
 }
 
 /// Tool choice configuration
@@ -585,9 +665,9 @@ pub struct MessagesRequest {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub system: Option<SystemPrompt>,
 
-    /// Available tools
+    /// Available tools (custom client tools and/or server tools)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub tools: Option<Vec<Tool>>,
+    pub tools: Option<Vec<ToolDefinition>>,
 
     /// Tool choice configuration
     ///
@@ -776,15 +856,15 @@ impl MessagesRequest {
 
     /// Set the available tools for this request.
     ///
-    /// Tools allow Claude to call functions and return structured data.
+    /// Accepts any mix of custom and server tools via [`ToolDefinition`].
     ///
     /// # Example
     ///
     /// ```rust
-    /// use claude_sdk::{MessagesRequest, Message, Tool};
+    /// use claude_sdk::{MessagesRequest, Message, CustomTool, ToolDefinition};
     /// use serde_json::json;
     ///
-    /// let calculator = Tool {
+    /// let calculator = ToolDefinition::Custom(CustomTool {
     ///     name: "calculator".into(),
     ///     description: "Perform basic arithmetic operations".into(),
     ///     input_schema: json!({
@@ -799,7 +879,7 @@ impl MessagesRequest {
     ///     disable_user_input: Some(true),
     ///     input_examples: None,
     ///     cache_control: None,
-    /// };
+    /// });
     ///
     /// let request = MessagesRequest::new(
     ///     "claude-sonnet-4-5-20250929",
@@ -808,8 +888,39 @@ impl MessagesRequest {
     /// )
     /// .with_tools(vec![calculator]);
     /// ```
-    pub fn with_tools(mut self, tools: Vec<Tool>) -> Self {
+    pub fn with_tools(mut self, tools: Vec<ToolDefinition>) -> Self {
         self.tools = Some(tools);
+        self
+    }
+
+    /// Set tools using only custom (client-side) tools.
+    ///
+    /// Convenience method that wraps each [`CustomTool`] in [`ToolDefinition::Custom`].
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use claude_sdk::{MessagesRequest, Message, CustomTool};
+    /// use serde_json::json;
+    ///
+    /// let tool = CustomTool {
+    ///     name: "my_tool".into(),
+    ///     description: "A tool".into(),
+    ///     input_schema: json!({"type": "object"}),
+    ///     disable_user_input: None,
+    ///     input_examples: None,
+    ///     cache_control: None,
+    /// };
+    ///
+    /// let request = MessagesRequest::new(
+    ///     "claude-sonnet-4-5-20250929",
+    ///     1024,
+    ///     vec![Message::user("Hello")],
+    /// )
+    /// .with_custom_tools(vec![tool]);
+    /// ```
+    pub fn with_custom_tools(mut self, tools: Vec<CustomTool>) -> Self {
+        self.tools = Some(tools.into_iter().map(ToolDefinition::Custom).collect());
         self
     }
 
@@ -1110,7 +1221,7 @@ mod tests {
 
     #[test]
     fn test_tool_with_cache() {
-        let tool = Tool {
+        let tool = CustomTool {
             name: "test".into(),
             description: "test tool".into(),
             input_schema: serde_json::json!({"type": "object"}),
