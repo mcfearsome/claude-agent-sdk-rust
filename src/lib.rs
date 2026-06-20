@@ -250,7 +250,7 @@ pub use streaming::{ContentDelta, MessageDelta, StreamEvent};
 #[allow(deprecated)]
 pub use types::{
     CacheTtl, ContentBlock, CustomTool, EffortLevel, Message, MessagesRequest, MessagesResponse,
-    Metadata, OutputConfig, OutputFormat, OutputTokensDetails, RateLimitInfo, RefusalCategory, Role,
-    ServerToolUsage, ServiceTier, StopDetails, StopReason, ThinkingConfig, ThinkingDisplay, Tool,
-    ToolChoice, ToolDefinition, ToolResultContent, Usage,
+    Metadata, OutputConfig, OutputFormat, OutputTokensDetails, RateLimitInfo, RefusalCategory,
+    Role, ServerToolUsage, ServiceTier, StopDetails, StopReason, ThinkingConfig, ThinkingDisplay,
+    TokenCount, Tool, ToolChoice, ToolDefinition, ToolResultContent, Usage,
 };

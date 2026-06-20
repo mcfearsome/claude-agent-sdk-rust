@@ -626,11 +626,9 @@ impl ClaudeClient {
                 Ok(token_count)
             }
             #[cfg(feature = "bedrock")]
-            ClaudeBackend::Bedrock { .. } => {
-                Err(crate::error::Error::InvalidRequest(
-                    "Token counting endpoint is not available for Bedrock".into(),
-                ))
-            }
+            ClaudeBackend::Bedrock { .. } => Err(crate::error::Error::InvalidRequest(
+                "Token counting endpoint is not available for Bedrock".into(),
+            )),
         }
     }
 
@@ -728,7 +726,10 @@ mod tests {
 
     #[test]
     fn test_token_count_url() {
-        assert_eq!(TOKEN_COUNT_URL, "https://api.anthropic.com/v1/messages/count_tokens");
+        assert_eq!(
+            TOKEN_COUNT_URL,
+            "https://api.anthropic.com/v1/messages/count_tokens"
+        );
     }
 
     #[test]
