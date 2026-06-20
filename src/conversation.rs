@@ -158,7 +158,7 @@
 
 use crate::types::{
     CacheControl, ContentBlock, CustomTool, Message, MessagesRequest, Role, SystemBlock,
-    SystemPrompt, ToolDefinition,
+    SystemPrompt, ToolDefinition, ToolResultContent,
 };
 
 /// Builder for managing multi-turn conversations with Claude
@@ -347,7 +347,7 @@ impl ConversationBuilder {
             role: Role::User,
             content: vec![ContentBlock::ToolResult {
                 tool_use_id: tool_use_id.into(),
-                content: Some(error_message.into()),
+                content: Some(ToolResultContent::Text(error_message.into())),
                 is_error: Some(true),
             }],
         });

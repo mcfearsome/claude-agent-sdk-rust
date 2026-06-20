@@ -837,13 +837,30 @@ pub enum ThinkingConfig {
         /// Minimum: 1024 tokens
         /// Can exceed max_tokens with interleaved thinking (beta: interleaved-thinking-2025-05-14)
         budget_tokens: u32,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        display: Option<ThinkingDisplay>,
     },
     /// Disable extended thinking
     Disabled,
+    /// Adaptive thinking -- let the model decide how much to think
+    Adaptive {
+        #[serde(skip_serializing_if = "Option::is_none")]
+        display: Option<ThinkingDisplay>,
+    },
+}
+
+/// How to display thinking blocks in responses
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum ThinkingDisplay {
+    /// Show summarized thinking
+    Summarized,
+    /// Omit thinking from response
+    Omitted,
 }
 
 /// Output configuration for controlling response behavior
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct OutputConfig {
     /// Effort level: controls token spending vs. response quality
     ///
@@ -855,6 +872,18 @@ pub struct OutputConfig {
     /// Only supported by Claude Opus 4.5
     #[serde(skip_serializing_if = "Option::is_none")]
     pub effort: Option<EffortLevel>,
+
+    /// Output format specification for structured outputs
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub format: Option<OutputFormat>,
+}
+
+/// Output format specification for structured outputs
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct OutputFormat {
+    #[serde(rename = "type")]
+    pub format_type: String,
+    pub schema: serde_json::Value,
 }
 
 /// Effort level for response generation
@@ -1103,8 +1132,23 @@ impl MessagesRequest {
     /// .with_effort(EffortLevel::Low);  // Optimize for efficiency
     /// ```
     pub fn with_effort(mut self, effort: EffortLevel) -> Self {
-        self.output_config = Some(OutputConfig {
-            effort: Some(effort),
+        let config = self.output_config.get_or_insert(OutputConfig {
+            effort: None,
+            format: None,
+        });
+        config.effort = Some(effort);
+        self
+    }
+
+    /// Set JSON schema for structured output
+    pub fn with_json_schema(mut self, schema: serde_json::Value) -> Self {
+        let config = self.output_config.get_or_insert(OutputConfig {
+            effort: None,
+            format: None,
+        });
+        config.format = Some(OutputFormat {
+            format_type: "json_schema".into(),
+            schema,
         });
         self
     }
@@ -1133,7 +1177,16 @@ impl MessagesRequest {
     /// .with_thinking(4096);  // Allow up to 4096 tokens for reasoning
     /// ```
     pub fn with_thinking(mut self, budget_tokens: u32) -> Self {
-        self.thinking = Some(ThinkingConfig::Enabled { budget_tokens });
+        self.thinking = Some(ThinkingConfig::Enabled {
+            budget_tokens,
+            display: None,
+        });
+        self
+    }
+
+    /// Enable adaptive thinking -- let the model decide how much to think
+    pub fn with_adaptive_thinking(mut self) -> Self {
+        self.thinking = Some(ThinkingConfig::Adaptive { display: None });
         self
     }
 
@@ -1543,13 +1596,12 @@ mod tests {
     #[test]
     fn test_unknown_content_block_deserializes() {
         let json =
-            r#"{"type": "server_tool_use", "id": "stu_123", "name": "web_search", "input": {}}"#;
+            r#"{"type": "some_future_block", "id": "fb_123", "data": "test"}"#;
         let block: ContentBlock = serde_json::from_str(json).unwrap();
         match block {
             ContentBlock::Unknown { block_type, data } => {
-                assert_eq!(block_type, "server_tool_use");
-                assert_eq!(data["name"], "web_search");
-                assert_eq!(data["id"], "stu_123");
+                assert_eq!(block_type, "some_future_block");
+                assert_eq!(data["id"], "fb_123");
             }
             _ => panic!("Expected Unknown variant"),
         }
@@ -1588,7 +1640,7 @@ mod tests {
             "role": "assistant",
             "content": [
                 {"type": "text", "text": "hello"},
-                {"type": "server_tool_use", "id": "stu_1", "name": "web_search", "input": {}}
+                {"type": "some_future_block", "id": "fb_1", "data": "test"}
             ],
             "model": "claude-sonnet-4-5-20250929",
             "stop_reason": "end_turn",
@@ -1603,7 +1655,7 @@ mod tests {
         }
         match &response.content[1] {
             ContentBlock::Unknown { block_type, .. } => {
-                assert_eq!(block_type, "server_tool_use");
+                assert_eq!(block_type, "some_future_block");
             }
             _ => panic!("Expected Unknown variant"),
         }
@@ -1621,6 +1673,212 @@ mod tests {
                 assert_eq!(data["foo"], "bar");
             }
             _ => panic!("Expected Unknown variant"),
+        }
+    }
+
+    // Task 3: Server tool content block tests
+
+    #[test]
+    fn test_server_tool_use_deserialization() {
+        let json = r#"{"type": "server_tool_use", "id": "stu_123", "name": "web_search", "input": {"query": "rust"}}"#;
+        let block: ContentBlock = serde_json::from_str(json).unwrap();
+        match block {
+            ContentBlock::ServerToolUse { id, name, input, .. } => {
+                assert_eq!(id, "stu_123");
+                assert_eq!(name, "web_search");
+                assert_eq!(input["query"], "rust");
+            }
+            _ => panic!("Expected ServerToolUse variant"),
+        }
+    }
+
+    #[test]
+    fn test_web_search_tool_result_deserialization() {
+        let json = r#"{"type": "web_search_tool_result", "tool_use_id": "stu_123", "content": [{"type": "web_page", "url": "https://example.com"}]}"#;
+        let block: ContentBlock = serde_json::from_str(json).unwrap();
+        match block {
+            ContentBlock::WebSearchToolResult { tool_use_id, content, .. } => {
+                assert_eq!(tool_use_id, "stu_123");
+                assert!(content.is_array());
+            }
+            _ => panic!("Expected WebSearchToolResult variant"),
+        }
+    }
+
+    #[test]
+    fn test_code_execution_tool_result_deserialization() {
+        let json = r#"{"type": "code_execution_tool_result", "tool_use_id": "ce_123", "content": {"stdout": "hello"}}"#;
+        let block: ContentBlock = serde_json::from_str(json).unwrap();
+        match block {
+            ContentBlock::CodeExecutionToolResult { tool_use_id, content, .. } => {
+                assert_eq!(tool_use_id, "ce_123");
+                assert_eq!(content["stdout"], "hello");
+            }
+            _ => panic!("Expected CodeExecutionToolResult variant"),
+        }
+    }
+
+    // Task 4: Structured output + adaptive thinking tests
+
+    #[test]
+    fn test_structured_output_serialization() {
+        let schema = serde_json::json!({
+            "type": "object",
+            "properties": {
+                "name": {"type": "string"}
+            }
+        });
+        let request = MessagesRequest::new(
+            "claude-sonnet-4-5-20250929",
+            1024,
+            vec![Message::user("test")],
+        )
+        .with_json_schema(schema.clone());
+
+        let json = serde_json::to_value(&request).unwrap();
+        assert_eq!(json["output_config"]["format"]["type"], "json_schema");
+        assert_eq!(json["output_config"]["format"]["schema"], schema);
+    }
+
+    #[test]
+    fn test_effort_and_schema_coexist() {
+        let request = MessagesRequest::new(
+            "claude-sonnet-4-5-20250929",
+            1024,
+            vec![Message::user("test")],
+        )
+        .with_effort(EffortLevel::Low)
+        .with_json_schema(serde_json::json!({"type": "object"}));
+
+        let config = request.output_config.as_ref().unwrap();
+        assert_eq!(config.effort, Some(EffortLevel::Low));
+        assert!(config.format.is_some());
+    }
+
+    #[test]
+    fn test_adaptive_thinking_serialization() {
+        let request = MessagesRequest::new(
+            "claude-sonnet-4-5-20250929",
+            1024,
+            vec![Message::user("test")],
+        )
+        .with_adaptive_thinking();
+
+        let json = serde_json::to_value(&request).unwrap();
+        assert_eq!(json["thinking"]["type"], "adaptive");
+    }
+
+    #[test]
+    fn test_thinking_config_enabled_with_display() {
+        let config = ThinkingConfig::Enabled {
+            budget_tokens: 4096,
+            display: Some(ThinkingDisplay::Summarized),
+        };
+        let json = serde_json::to_value(&config).unwrap();
+        assert_eq!(json["type"], "enabled");
+        assert_eq!(json["budget_tokens"], 4096);
+        assert_eq!(json["display"], "summarized");
+    }
+
+    // Task 5: ToolChoice, ToolResultContent, ToolUse caller tests
+
+    #[test]
+    fn test_tool_choice_auto_serialization() {
+        let choice = ToolChoice::auto();
+        let json = serde_json::to_value(&choice).unwrap();
+        assert_eq!(json["type"], "auto");
+        // disable_parallel_tool_use should be omitted when None
+        assert!(json.get("disable_parallel_tool_use").is_none());
+    }
+
+    #[test]
+    fn test_tool_choice_with_disable_parallel() {
+        let choice = ToolChoice::Auto {
+            disable_parallel_tool_use: Some(true),
+        };
+        let json = serde_json::to_value(&choice).unwrap();
+        assert_eq!(json["type"], "auto");
+        assert_eq!(json["disable_parallel_tool_use"], true);
+    }
+
+    #[test]
+    fn test_tool_choice_tool_serialization() {
+        let choice = ToolChoice::tool("my_tool");
+        let json = serde_json::to_value(&choice).unwrap();
+        assert_eq!(json["type"], "tool");
+        assert_eq!(json["name"], "my_tool");
+        assert!(json.get("disable_parallel_tool_use").is_none());
+    }
+
+    #[test]
+    fn test_tool_result_content_text_serialization() {
+        let content = ToolResultContent::Text("hello".into());
+        let json = serde_json::to_value(&content).unwrap();
+        assert_eq!(json, serde_json::json!("hello"));
+    }
+
+    #[test]
+    fn test_tool_result_content_blocks_serialization() {
+        let content = ToolResultContent::Blocks(vec![ContentBlock::Text {
+            text: "result".into(),
+            cache_control: None,
+            citations: None,
+        }]);
+        let json = serde_json::to_value(&content).unwrap();
+        assert!(json.is_array());
+        assert_eq!(json[0]["type"], "text");
+        assert_eq!(json[0]["text"], "result");
+    }
+
+    #[test]
+    fn test_tool_use_with_caller() {
+        let block = ContentBlock::ToolUse {
+            id: "tu_123".into(),
+            name: "my_tool".into(),
+            input: serde_json::json!({}),
+            caller: Some("code_execution_20250825".into()),
+            cache_control: None,
+        };
+        let json = serde_json::to_value(&block).unwrap();
+        assert_eq!(json["caller"], "code_execution_20250825");
+    }
+
+    #[test]
+    fn test_tool_use_without_caller() {
+        let block = ContentBlock::ToolUse {
+            id: "tu_123".into(),
+            name: "my_tool".into(),
+            input: serde_json::json!({}),
+            caller: None,
+            cache_control: None,
+        };
+        let json = serde_json::to_value(&block).unwrap();
+        assert!(json.get("caller").is_none());
+    }
+
+    #[test]
+    fn test_server_tool_use_in_response() {
+        let json = r#"{
+            "id": "msg_123",
+            "type": "message",
+            "role": "assistant",
+            "content": [
+                {"type": "text", "text": "searching..."},
+                {"type": "server_tool_use", "id": "stu_1", "name": "web_search", "input": {"query": "rust"}}
+            ],
+            "model": "claude-sonnet-4-5-20250929",
+            "stop_reason": "end_turn",
+            "usage": {"input_tokens": 10, "output_tokens": 5}
+        }"#;
+
+        let response: MessagesResponse = serde_json::from_str(json).unwrap();
+        assert_eq!(response.content.len(), 2);
+        match &response.content[1] {
+            ContentBlock::ServerToolUse { id, name, .. } => {
+                assert_eq!(id, "stu_1");
+                assert_eq!(name, "web_search");
+            }
+            _ => panic!("Expected ServerToolUse variant"),
         }
     }
 }

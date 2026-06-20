@@ -5,6 +5,7 @@
 
 use crate::types::{
     ContentBlock, CustomTool, Message, MessagesRequest, SystemPrompt, ToolDefinition,
+    ToolResultContent,
 };
 use tiktoken_rs::cl100k_base;
 
@@ -111,8 +112,17 @@ impl TokenCounter {
             } => {
                 let mut total = 4; // Type and structure overhead
                 total += self.count_text(tool_use_id);
-                if let Some(text) = content {
-                    total += self.count_text(text);
+                if let Some(result_content) = content {
+                    match result_content {
+                        ToolResultContent::Text(text) => {
+                            total += self.count_text(text);
+                        }
+                        ToolResultContent::Blocks(blocks) => {
+                            for block in blocks {
+                                total += self.count_content_block(block);
+                            }
+                        }
+                    }
                 }
                 total
             }
@@ -142,6 +152,9 @@ impl TokenCounter {
 
                 total
             }
+            ContentBlock::ServerToolUse { .. } => 0,
+            ContentBlock::WebSearchToolResult { .. } => 0,
+            ContentBlock::CodeExecutionToolResult { .. } => 0,
             ContentBlock::Unknown { .. } => 0,
         }
     }

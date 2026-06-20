@@ -76,6 +76,7 @@ pub fn json_schema_tool(
 pub fn force_tool(tool_name: impl Into<String>) -> ToolChoice {
     ToolChoice::Tool {
         name: tool_name.into(),
+        disable_parallel_tool_use: None,
     }
 }
 
@@ -105,7 +106,7 @@ mod tests {
         let choice = force_tool("my_tool");
 
         match choice {
-            ToolChoice::Tool { name } => assert_eq!(name, "my_tool"),
+            ToolChoice::Tool { name, .. } => assert_eq!(name, "my_tool"),
             _ => panic!("Expected Tool variant"),
         }
     }
