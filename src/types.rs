@@ -1595,8 +1595,7 @@ mod tests {
 
     #[test]
     fn test_unknown_content_block_deserializes() {
-        let json =
-            r#"{"type": "some_future_block", "id": "fb_123", "data": "test"}"#;
+        let json = r#"{"type": "some_future_block", "id": "fb_123", "data": "test"}"#;
         let block: ContentBlock = serde_json::from_str(json).unwrap();
         match block {
             ContentBlock::Unknown { block_type, data } => {
@@ -1683,7 +1682,9 @@ mod tests {
         let json = r#"{"type": "server_tool_use", "id": "stu_123", "name": "web_search", "input": {"query": "rust"}}"#;
         let block: ContentBlock = serde_json::from_str(json).unwrap();
         match block {
-            ContentBlock::ServerToolUse { id, name, input, .. } => {
+            ContentBlock::ServerToolUse {
+                id, name, input, ..
+            } => {
                 assert_eq!(id, "stu_123");
                 assert_eq!(name, "web_search");
                 assert_eq!(input["query"], "rust");
@@ -1697,7 +1698,11 @@ mod tests {
         let json = r#"{"type": "web_search_tool_result", "tool_use_id": "stu_123", "content": [{"type": "web_page", "url": "https://example.com"}]}"#;
         let block: ContentBlock = serde_json::from_str(json).unwrap();
         match block {
-            ContentBlock::WebSearchToolResult { tool_use_id, content, .. } => {
+            ContentBlock::WebSearchToolResult {
+                tool_use_id,
+                content,
+                ..
+            } => {
                 assert_eq!(tool_use_id, "stu_123");
                 assert!(content.is_array());
             }
@@ -1710,7 +1715,11 @@ mod tests {
         let json = r#"{"type": "code_execution_tool_result", "tool_use_id": "ce_123", "content": {"stdout": "hello"}}"#;
         let block: ContentBlock = serde_json::from_str(json).unwrap();
         match block {
-            ContentBlock::CodeExecutionToolResult { tool_use_id, content, .. } => {
+            ContentBlock::CodeExecutionToolResult {
+                tool_use_id,
+                content,
+                ..
+            } => {
                 assert_eq!(tool_use_id, "ce_123");
                 assert_eq!(content["stdout"], "hello");
             }

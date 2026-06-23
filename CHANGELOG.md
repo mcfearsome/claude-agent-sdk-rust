@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-06-23
+
+### Added
+- **Server tools module** (`server_tools`): `WebSearchTool`, `WebFetchTool`, `CodeExecutionTool`, `BashTool`, `TextEditorTool` with ergonomic constructors and builder methods
+- **`ToolDefinition` enum**: Wraps `Custom(CustomTool)` and `Server(Value)` — replaces `Vec<Tool>` in `MessagesRequest.tools`
+- **Server tool content blocks**: `ServerToolUse`, `WebSearchToolResult`, `CodeExecutionToolResult` variants on `ContentBlock`
+- **Structured output**: `OutputConfig.format` with `OutputFormat` for JSON schema-based output via `with_json_schema()`
+- **Adaptive thinking**: `ThinkingConfig::Adaptive` variant + `ThinkingDisplay` enum (`Summarized`, `Omitted`)
+- **Token counting endpoint**: `ClaudeClient::count_tokens()` — server-side `POST /v1/messages/count_tokens`
+- **`ToolResultContent` union**: Tool results accept either `Text(String)` or `Blocks(Vec<ContentBlock>)`
+- **`caller` field** on `ContentBlock::ToolUse`: tracks which system invoked the tool
+
+### Changed
+- `Tool` renamed to `CustomTool` (deprecated type alias `Tool` preserved for migration)
+- `MessagesRequest.tools` type changed from `Option<Vec<Tool>>` to `Option<Vec<ToolDefinition>>`
+- `ToolChoice::Auto`, `Any`, `Tool` are now struct variants containing `disable_parallel_tool_use: Option<bool>`
+- `MessagesRequest.disable_parallel_tool_use` removed (moved into `ToolChoice` variants)
+- `ThinkingConfig::Enabled` gains `display: Option<ThinkingDisplay>` field
+- `ToolResult.content` type changed from `Option<String>` to `Option<ToolResultContent>`
+- `OutputConfig` no longer implements `Eq` (contains `serde_json::Value`)
+
 ## [1.1.0] - 2026-06-19
 
 ### Added
