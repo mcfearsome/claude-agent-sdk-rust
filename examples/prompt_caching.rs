@@ -30,10 +30,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Demonstrating cost reduction via prompt caching\n");
 
     // Define tools (these will be cached)
-    let search_tool = CustomTool {
-        name: "search_code".into(),
-        description: "Search through a codebase for specific patterns".into(),
-        input_schema: json!({
+    let search_tool = CustomTool::new(
+        "search_code",
+        "Search through a codebase for specific patterns",
+        json!({
             "type": "object",
             "properties": {
                 "query": {
@@ -47,18 +47,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             },
             "required": ["query"]
         }),
-        disable_user_input: Some(true),
-        input_examples: None,
-        cache_control: None, // Will be set by with_cached_tool()
-        defer_loading: None,
-        eager_input_streaming: None,
-        strict: None,
-    };
+    )
+    .programmatic(); // cache_control will be set by with_cached_tool()
 
-    let read_file_tool = CustomTool {
-        name: "read_file".into(),
-        description: "Read contents of a file".into(),
-        input_schema: json!({
+    let read_file_tool = CustomTool::new(
+        "read_file",
+        "Read contents of a file",
+        json!({
             "type": "object",
             "properties": {
                 "path": {
@@ -68,13 +63,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             },
             "required": ["path"]
         }),
-        disable_user_input: Some(true),
-        input_examples: None,
-        cache_control: None,
-        defer_loading: None,
-        eager_input_streaming: None,
-        strict: None,
-    };
+    )
+    .programmatic();
 
     // Build conversation with cached system and tools
     let mut conversation = ConversationBuilder::new()

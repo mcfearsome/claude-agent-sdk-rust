@@ -116,23 +116,18 @@
 //! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
 //! let client = ClaudeClient::anthropic(std::env::var("ANTHROPIC_API_KEY")?);
 //!
-//! let weather_tool = CustomTool {
-//!     name: "get_weather".into(),
-//!     description: "Get weather for a location".into(),
-//!     input_schema: json!({
+//! let weather_tool = CustomTool::new(
+//!     "get_weather",
+//!     "Get weather for a location",
+//!     json!({
 //!         "type": "object",
 //!         "properties": {
 //!             "location": { "type": "string" }
 //!         },
 //!         "required": ["location"]
 //!     }),
-//!     disable_user_input: Some(true),
-//!     input_examples: None,
-//!     cache_control: None,
-//!     defer_loading: None,
-//!     eager_input_streaming: None,
-//!     strict: None,
-//! };
+//! )
+//! .programmatic();
 //!
 //! let request = MessagesRequest::new(
 //!     "claude-sonnet-4-5-20250929",

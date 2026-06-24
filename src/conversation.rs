@@ -60,21 +60,16 @@
 //! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
 //! let client = ClaudeClient::anthropic(std::env::var("ANTHROPIC_API_KEY")?);
 //!
-//! let weather_tool = CustomTool {
-//!     name: "get_weather".into(),
-//!     description: "Get current weather for a city".into(),
-//!     input_schema: json!({
+//! let weather_tool = CustomTool::new(
+//!     "get_weather",
+//!     "Get current weather for a city",
+//!     json!({
 //!         "type": "object",
 //!         "properties": { "city": { "type": "string" } },
 //!         "required": ["city"]
 //!     }),
-//!     disable_user_input: Some(true),
-//!     input_examples: None,
-//!     cache_control: None,
-//!     defer_loading: None,
-//!     eager_input_streaming: None,
-//!     strict: None,
-//! };
+//! )
+//! .programmatic();
 //!
 //! let mut conversation = ConversationBuilder::new()
 //!     .with_tool(weather_tool);
@@ -124,17 +119,8 @@
 //!     .with_cached_system("You are an expert assistant with extensive knowledge...");
 //!
 //! // Cache tool definitions
-//! let tool = CustomTool {
-//!     name: "analyze".into(),
-//!     description: "Analyze data".into(),
-//!     input_schema: json!({"type": "object"}),
-//!     disable_user_input: Some(true),
-//!     input_examples: None,
-//!     cache_control: None,
-//!     defer_loading: None,
-//!     eager_input_streaming: None,
-//!     strict: None,
-//! };
+//! let tool = CustomTool::new("analyze", "Analyze data", json!({"type": "object"}))
+//!     .programmatic();
 //!
 //! let conversation = ConversationBuilder::new()
 //!     .with_cached_tool(tool);
@@ -251,23 +237,18 @@ impl ConversationBuilder {
     /// use claude_sdk::{ConversationBuilder, CustomTool};
     /// use serde_json::json;
     ///
-    /// let tool = CustomTool {
-    ///     name: "get_weather".into(),
-    ///     description: "Get weather for a location".into(),
-    ///     input_schema: json!({
+    /// let tool = CustomTool::new(
+    ///     "get_weather",
+    ///     "Get weather for a location",
+    ///     json!({
     ///         "type": "object",
     ///         "properties": {
     ///             "location": {"type": "string"}
     ///         },
     ///         "required": ["location"]
     ///     }),
-    ///     disable_user_input: Some(true),
-    ///     input_examples: None,
-    ///     cache_control: None,
-    ///     defer_loading: None,
-    ///     eager_input_streaming: None,
-    ///     strict: None,
-    /// };
+    /// )
+    /// .programmatic();
     ///
     /// let conversation = ConversationBuilder::new()
     ///     .with_tool(tool);
@@ -521,17 +502,7 @@ mod tests {
 
     #[test]
     fn test_with_tools() {
-        let tool = CustomTool {
-            name: "test_tool".into(),
-            description: "A test tool".into(),
-            input_schema: json!({"type": "object"}),
-            disable_user_input: None,
-            input_examples: None,
-            cache_control: None,
-            defer_loading: None,
-            eager_input_streaming: None,
-            strict: None,
-        };
+        let tool = CustomTool::new("test_tool", "A test tool", json!({"type": "object"}));
 
         let conv = ConversationBuilder::new().with_tool(tool);
 

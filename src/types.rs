@@ -584,23 +584,18 @@ pub struct SystemBlock {
 /// use claude_sdk::CustomTool;
 /// use serde_json::json;
 ///
-/// let tool = CustomTool {
-///     name: "get_weather".into(),
-///     description: "Get weather for a location".into(),
-///     input_schema: json!({
+/// let tool = CustomTool::new(
+///     "get_weather",
+///     "Get weather for a location",
+///     json!({
 ///         "type": "object",
 ///         "properties": {
 ///             "location": { "type": "string" }
 ///         },
 ///         "required": ["location"]
 ///     }),
-///     disable_user_input: Some(true),
-///     input_examples: None,
-///     cache_control: None,
-///     defer_loading: None,
-///     eager_input_streaming: None,
-///     strict: None,
-/// };
+/// )
+/// .programmatic();
 /// ```
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CustomTool {
@@ -636,6 +631,39 @@ pub struct CustomTool {
     pub strict: Option<bool>,
 }
 
+impl CustomTool {
+    /// Create a new custom tool definition
+    pub fn new(
+        name: impl Into<String>,
+        description: impl Into<String>,
+        input_schema: serde_json::Value,
+    ) -> Self {
+        Self {
+            name: name.into(),
+            description: description.into(),
+            input_schema,
+            disable_user_input: None,
+            input_examples: None,
+            cache_control: None,
+            defer_loading: None,
+            eager_input_streaming: None,
+            strict: None,
+        }
+    }
+
+    /// Set programmatic tool calling (no user confirmation)
+    pub fn programmatic(mut self) -> Self {
+        self.disable_user_input = Some(true);
+        self
+    }
+
+    /// Enable strict JSON schema validation
+    pub fn with_strict(mut self) -> Self {
+        self.strict = Some(true);
+        self
+    }
+}
+
 /// Renamed to [`CustomTool`] in v2.0. Use `CustomTool` directly.
 #[deprecated(
     since = "2.0.0",
@@ -659,17 +687,9 @@ pub type Tool = CustomTool;
 /// use serde_json::json;
 ///
 /// // Custom tool
-/// let custom = ToolDefinition::Custom(CustomTool {
-///     name: "my_tool".into(),
-///     description: "A custom tool".into(),
-///     input_schema: json!({"type": "object"}),
-///     disable_user_input: None,
-///     input_examples: None,
-///     cache_control: None,
-///     defer_loading: None,
-///     eager_input_streaming: None,
-///     strict: None,
-/// });
+/// let custom = ToolDefinition::Custom(
+///     CustomTool::new("my_tool", "A custom tool", json!({"type": "object"}))
+/// );
 ///
 /// // Server tool (raw JSON)
 /// let server = ToolDefinition::Server(json!({
@@ -1051,25 +1071,22 @@ impl MessagesRequest {
     /// use claude_sdk::{MessagesRequest, Message, CustomTool, ToolDefinition};
     /// use serde_json::json;
     ///
-    /// let calculator = ToolDefinition::Custom(CustomTool {
-    ///     name: "calculator".into(),
-    ///     description: "Perform basic arithmetic operations".into(),
-    ///     input_schema: json!({
-    ///         "type": "object",
-    ///         "properties": {
-    ///             "operation": { "type": "string", "enum": ["add", "subtract", "multiply", "divide"] },
-    ///             "a": { "type": "number" },
-    ///             "b": { "type": "number" }
-    ///         },
-    ///         "required": ["operation", "a", "b"]
-    ///     }),
-    ///     disable_user_input: Some(true),
-    ///     input_examples: None,
-    ///     cache_control: None,
-    ///     defer_loading: None,
-    ///     eager_input_streaming: None,
-    ///     strict: None,
-    /// });
+    /// let calculator = ToolDefinition::Custom(
+    ///     CustomTool::new(
+    ///         "calculator",
+    ///         "Perform basic arithmetic operations",
+    ///         json!({
+    ///             "type": "object",
+    ///             "properties": {
+    ///                 "operation": { "type": "string", "enum": ["add", "subtract", "multiply", "divide"] },
+    ///                 "a": { "type": "number" },
+    ///                 "b": { "type": "number" }
+    ///             },
+    ///             "required": ["operation", "a", "b"]
+    ///         }),
+    ///     )
+    ///     .programmatic()
+    /// );
     ///
     /// let request = MessagesRequest::new(
     ///     "claude-sonnet-4-5-20250929",
@@ -1093,17 +1110,7 @@ impl MessagesRequest {
     /// use claude_sdk::{MessagesRequest, Message, CustomTool};
     /// use serde_json::json;
     ///
-    /// let tool = CustomTool {
-    ///     name: "my_tool".into(),
-    ///     description: "A tool".into(),
-    ///     input_schema: json!({"type": "object"}),
-    ///     disable_user_input: None,
-    ///     input_examples: None,
-    ///     cache_control: None,
-    ///     defer_loading: None,
-    ///     eager_input_streaming: None,
-    ///     strict: None,
-    /// };
+    /// let tool = CustomTool::new("my_tool", "A tool", json!({"type": "object"}));
     ///
     /// let request = MessagesRequest::new(
     ///     "claude-sonnet-4-5-20250929",
@@ -1442,17 +1449,9 @@ mod tests {
 
     #[test]
     fn test_tool_with_cache() {
-        let tool = CustomTool {
-            name: "test".into(),
-            description: "test tool".into(),
-            input_schema: serde_json::json!({"type": "object"}),
-            disable_user_input: Some(true),
-            input_examples: None,
-            cache_control: Some(CacheControl::ephemeral()),
-            defer_loading: None,
-            eager_input_streaming: None,
-            strict: None,
-        };
+        let mut tool = CustomTool::new("test", "test tool", serde_json::json!({"type": "object"}))
+            .programmatic();
+        tool.cache_control = Some(CacheControl::ephemeral());
 
         let json = serde_json::to_value(&tool).unwrap();
         assert_eq!(json["name"], "test");
@@ -1461,17 +1460,10 @@ mod tests {
 
     #[test]
     fn test_custom_tool_with_new_fields() {
-        let tool = CustomTool {
-            name: "test".into(),
-            description: "test".into(),
-            input_schema: serde_json::json!({"type": "object"}),
-            disable_user_input: None,
-            input_examples: None,
-            cache_control: None,
-            defer_loading: Some(true),
-            eager_input_streaming: Some(true),
-            strict: Some(true),
-        };
+        let mut tool =
+            CustomTool::new("test", "test", serde_json::json!({"type": "object"})).with_strict();
+        tool.defer_loading = Some(true);
+        tool.eager_input_streaming = Some(true);
         let json = serde_json::to_value(&tool).unwrap();
         assert_eq!(json["defer_loading"], true);
         assert_eq!(json["eager_input_streaming"], true);

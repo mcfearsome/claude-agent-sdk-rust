@@ -34,10 +34,10 @@ fn main() {
     println!("  Type: {}\n", code_exec.tool_type);
 
     // 3. Custom tool alongside server tools
-    let custom_tool = CustomTool {
-        name: "format_output".into(),
-        description: "Format data into a specific output structure".into(),
-        input_schema: json!({
+    let custom_tool = CustomTool::new(
+        "format_output",
+        "Format data into a specific output structure",
+        json!({
             "type": "object",
             "properties": {
                 "title": {"type": "string"},
@@ -45,13 +45,9 @@ fn main() {
             },
             "required": ["title", "data"]
         }),
-        disable_user_input: Some(true),
-        input_examples: None,
-        cache_control: None,
-        defer_loading: None,
-        eager_input_streaming: None,
-        strict: Some(true),
-    };
+    )
+    .programmatic()
+    .with_strict();
 
     println!("Custom Tool:");
     println!("  Name: {}", custom_tool.name);

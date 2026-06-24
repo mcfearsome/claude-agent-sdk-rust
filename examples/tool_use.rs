@@ -32,10 +32,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("=================================\n");
 
     // Define tools
-    let get_weather_tool = CustomTool {
-        name: "get_weather".into(),
-        description: "Get the current weather for a given location".into(),
-        input_schema: json!({
+    let get_weather_tool = CustomTool::new(
+        "get_weather",
+        "Get the current weather for a given location",
+        json!({
             "type": "object",
             "properties": {
                 "location": {
@@ -50,18 +50,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             },
             "required": ["location"]
         }),
-        disable_user_input: Some(true), // Programmatic tool calling
-        input_examples: None,
-        cache_control: None,
-        defer_loading: None,
-        eager_input_streaming: None,
-        strict: None,
-    };
+    )
+    .programmatic();
 
-    let calculate_tool = CustomTool {
-        name: "calculate".into(),
-        description: "Perform basic arithmetic calculations".into(),
-        input_schema: json!({
+    let calculate_tool = CustomTool::new(
+        "calculate",
+        "Perform basic arithmetic calculations",
+        json!({
             "type": "object",
             "properties": {
                 "expression": {
@@ -71,13 +66,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             },
             "required": ["expression"]
         }),
-        disable_user_input: Some(true),
-        input_examples: None,
-        cache_control: None,
-        defer_loading: None,
-        eager_input_streaming: None,
-        strict: None,
-    };
+    )
+    .programmatic();
 
     // Build conversation with tools
     let mut conversation = ConversationBuilder::new()

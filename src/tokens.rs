@@ -358,17 +358,11 @@ mod tests {
     fn test_count_tool() {
         let counter = TokenCounter::new();
 
-        let tool = CustomTool {
-            name: "get_weather".into(),
-            description: "Get the current weather".into(),
-            input_schema: json!({"type": "object"}),
-            disable_user_input: None,
-            input_examples: None,
-            cache_control: None,
-            defer_loading: None,
-            eager_input_streaming: None,
-            strict: None,
-        };
+        let tool = CustomTool::new(
+            "get_weather",
+            "Get the current weather",
+            json!({"type": "object"}),
+        );
 
         let tokens = counter.count_custom_tool(&tool);
         assert!(tokens > 10); // Should include overhead + content
