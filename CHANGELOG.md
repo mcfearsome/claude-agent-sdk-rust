@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-06-23
+
+### Added
+- **Container support**: `container` field on `MessagesRequest` (`with_container()`), `Container` struct on response, `ContainerUpload` content block
+- **Mid-conversation system blocks**: `MidConvSystem` content block variant for injecting system instructions mid-conversation
+- **Memory tool**: `MemoryTool` in `server_tools` module for persistent memory across conversations
+- **Tool search tools**: `ToolSearchBm25` and `ToolSearchRegex` in `server_tools` for searching over large tool sets
+- **CustomTool enhancements**: `defer_loading`, `eager_input_streaming`, `strict` optional fields
+
 ## [2.0.0] - 2026-06-23
 
 ### Added
